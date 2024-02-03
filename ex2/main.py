@@ -24,6 +24,7 @@ def tag_filter(tag):
 
 
 
+
 #nl.download('brown')
 #brown = nl.corpus.brown
 my_brown = brown.tagged_sents(categories='news')
