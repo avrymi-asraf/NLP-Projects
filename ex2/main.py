@@ -7,6 +7,7 @@ POS_INDEX = 1
 def contains_only_nonalphabetic(input_string):
     return not any(char.isalpha() for char in input_string)
 
+
 def cut_until_nonalphabetic(input_string):
     result = ""
     for char in input_string:
