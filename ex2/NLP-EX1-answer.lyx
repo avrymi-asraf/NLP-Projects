@@ -1,0 +1,944 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass heb-article
+\begin_preamble
+% Convert the Lyx colors into more pleasent colors:
+\usepackage{xcolor}
+\definecolor{blue}{RGB}{12,97,197}
+\definecolor{green}{RGB}{0,128,40}
+\definecolor{red}{RGB}{235,16,16}
+\definecolor{brown}{RGB}{154,58,0}
+\definecolor{orange}{RGB}{231,135,26}
+\definecolor{purple}{RGB}{94,53,177}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language hebrew
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "David"
+\font_sans "default" "David"
+\font_typewriter "default" "David"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts true
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing onehalf
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\topmargin 2cm
+\rightmargin 1cm
+\bottommargin 3cm
+\headheight 0cm
+\headsep 0cm
+\footskip 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation 0bp
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+
+\size giant
+תרגיל
+\family roman
+\series medium
+\shape up
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\emph default
+\numeric on
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+2
+\numeric off
+ 
+\lang english
+NLP -
+\lang hebrew
+ 
+\end_layout
+
+\begin_layout Standard
+
+\lang english
+Avraham Asraf : 315774570
+\end_layout
+
+\begin_layout Standard
+
+\lang english
+Schnaidman Elchanan: 316092436
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\innp}[2]{\left\langle #1,#2\right\rangle }
+{\left\langle #1,#2\right\rangle }
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+חלק
+\family roman
+\series bold
+\shape up
+\size larger
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\numeric on
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+1
+\end_layout
+
+\begin_layout Subsubsection*
+סעיף
+\family roman
+\series bold
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+a
+\end_layout
+
+\begin_layout Standard
+לפי ההדרכה, נוכיח כי המשלים, כלומר הסיכוי למשפטים שלא נגמרים הוא
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\numeric on
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+0
+\numeric off
+.
+ 
+\end_layout
+
+\begin_layout Standard
+נסמן 
+\begin_inset Formula 
+\[
+\Omega=\left\{ s=\left(w_{1},...w_{n}\right)|n\in\mathbb{N}\cup\infty\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+מתקיים 
+\begin_inset Formula 
+\[
+\Omega=\Omega_{\mathbb{N}}\cup\Omega_{\infty}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+נוכיח כי 
+\begin_inset Formula 
+\[
+\mathbb{P}\left(\Omega_{\mathbb{\infty}}\right)=0
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+מתקיים 
+\begin_inset Formula 
+\[
+\mathbb{P}\left(\Omega_{\mathbb{\infty}}\right)=\sum_{s\in\Omega_{\infty}}\mathbb{P}\left(s\right)
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+כיון שמהאורעות זרים,
+\end_layout
+
+\begin_layout Standard
+קיים 
+\begin_inset Formula $\varepsilon>0$
+\end_inset
+
+ המקיים 
+\begin_inset Formula 
+\[
+\varepsilon=\min_{w\in W}\left\{ \mathbb{P}\left(\text{stop}|w\right)\right\} 
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+אזי לכל 
+\begin_inset Formula $w_{i},w_{j}\in W$
+\end_inset
+
+ מתקיים 
+\begin_inset Formula 
+\[
+\mathbb{P}\left(w_{i}|w_{1}...,w_{j}\right)\leq1-\varepsilon
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+כיון שהסיכוי ל
+\begin_inset Formula $\mathbb{P}\left(\text{stop}|w_{1}...,w_{j}\right)=\mathbb{P}\left(\text{stop}|w_{j}\right)\geq\varepsilon$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+א
+\begin_inset Quotes erd
+\end_inset
+
+כ לכל 
+\begin_inset Formula $s\in\Omega_{\infty}$
+\end_inset
+
+ מתקיים
+\begin_inset Formula 
+\[
+\mathbb{P}\left(s\right)\leq\prod_{i=1}^{\infty}1-\varepsilon=\lim_{n\to\infty}\left(1-\varepsilon\right)^{n}=0
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+לכן 
+\begin_inset Formula 
+\[
+\mathbb{P}\left(\Omega_{\mathbb{\infty}}\right)=\sum_{s\in\Omega_{\infty}}\mathbb{P}\left(s\right)=\sum_{s\in\Omega_{\infty}}0=0
+\]
+
+\end_inset
+
+ כנדרש.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+
+\numeric on
+1
+\numeric off
+.
+\lang english
+b
+\end_layout
+
+\begin_layout Standard
+במודל לא מרקובי המקיים את ההנחות לעיל יתכן שיהיה משפט אינסופי עם הסתברות
+ גדולה מ
+\numeric on
+0
+\numeric off
+.
+\end_layout
+
+\begin_layout Standard
+דוגמה:
+\end_layout
+
+\begin_layout Standard
+יהי 
+\begin_inset Formula $P$
+\end_inset
+
+ מודל שפה על אוצר המילים 
+\begin_inset Formula $\left(\text{start},\text{w},\text{end}\right)$
+\end_inset
+
+ מוגדר בצורה הבאה: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+P\left(\text{end}|s\right)=\begin{cases}
+0 & s=\left(\text{start}\right)\\
+\frac{1}{2^{n}} & s=\left(\text{start},\text{w}...,\text{w}_{n}\right)
+\end{cases},P\left(\text{w}|s\right)=\begin{cases}
+1 & s=\left(\text{start}\right)\\
+1-\frac{1}{2^{n}} & s=\left(\text{start},\text{w}...,\text{w}_{n}\right)
+\end{cases}
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+זהו מודל מוגדר היטב: 
+\begin_inset Formula 
+\[
+\sum_{n\to\infty}P\left(s_{n}\right)=\frac{1}{2}+\frac{1}{4}....+\frac{1}{2^{n}}=\frac{\frac{1}{2}}{1-\frac{1}{2}}=1
+\]
+
+\end_inset
+
+ כאשר 
+\begin_inset Formula $s_{n}$
+\end_inset
+
+ מסמן את מספר ה
+\begin_inset Formula $\text{w}$
+\end_inset
+
+ במילה.
+ 
+\end_layout
+
+\begin_layout Standard
+בכל רצף מילים קיים סיכוי חיובי להגיע ל
+\begin_inset Formula $\text{end}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+קיים סיכוי חיובי לטור אינסופי
+\begin_inset Formula 
+\[
+\lim_{n\to\infty}\left(1-\frac{1}{2^{n}}\right)^{n}>\lim_{n\to\infty}\left(1-\frac{1}{n}\right)^{n}=\frac{1}{e}>0
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+כנדרש.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+
+\numeric on
+2
+\numeric off
+.
+\lang english
+a
+\end_layout
+
+\begin_layout Standard
+במודל
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+unigram
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\lang hebrew
+ קיימות שלוש אפשרויות:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\text{\ensuremath{\mathbb{P}\left(\text{where}\right)>\mathbb{P}\left(\text{were}\right)}}$
+\end_inset
+
+ או 
+\begin_inset Formula $\mathbb{P}\left(\text{where}\right)<\mathbb{P}\left(\text{were}\right)$
+\end_inset
+
+ או 
+\begin_inset Formula $\mathbb{P}\left(\text{where}\right)=\mathbb{P}\left(\text{were}\right)$
+\end_inset
+
+ ואז ההחלטה בן
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+where
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\lang hebrew
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ל
+\lang english
+were
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\lang hebrew
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+תהיה לא דטרמניסטית.
+ 
+\end_layout
+
+\begin_layout Standard
+אם 
+\begin_inset Formula $\ensuremath{\mathbb{P}\left(\text{where}\right)>\mathbb{P}\left(\text{were}\right)}$
+\end_inset
+
+אזי מתקן השגיאות
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+לא יחליף את ההופעה של
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+were
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\lang hebrew
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+במקום הלא נכון.
+ 
+\end_layout
+
+\begin_layout Standard
+אם 
+\begin_inset Formula $\mathbb{P}\left(\text{where}\right)<\mathbb{P}\left(\text{were}\right)$
+\end_inset
+
+ מתקן השגיאות יחליף את שתי ההופעות של
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+where
+\lang hebrew
+.
+ במקרה בו הסיכוי שווה לא תהיה החלטה קבועה ובכל מקרה לא נקבל פתרון נכון בוודאות.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage newpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+
+\numeric on
+2
+\numeric off
+.
+\lang english
+b
+\end_layout
+
+\begin_layout Standard
+אם נשתמש במודל
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+\lang english
+bigram
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\lang hebrew
+ 
+\end_layout
+
+\begin_layout Standard
+אם
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula $\mathbb{P}\left(\text{where}|\text{went}\right)>\mathbb{P}\left(\text{were}|\text{went}\right)$
+\end_inset
+
+וגם 
+\begin_inset Formula $\ensuremath{\mathbb{P}\left(\text{where}|\text{there}\right)<\mathbb{P}\left(\text{were}|\text{there}\right)}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+כלומר יש יותר מקרים כאלה בקרפוס, אזי המודל יתקן נכון.
+ 
+\end_layout
+
+\begin_layout Standard
+יתכן שמודל כזה יתן סיכוי
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\numeric on
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+0
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\numeric off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+לצמד מילים שלא נמצאים בקורפוס, גם אם הוא הגיוני.
+ 
+\end_layout
+
+\begin_layout Standard
+כמו כן מילה אחת לפני לא מספיקה בשביל לדעת האם המשפט נכון או לא.
+ ויתכן שצימדי מילים שנמצאות הרבה יקבלו סיכוי גבוה ויחזו כנכונים גם במקרים
+ לא הגיוניים.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document
