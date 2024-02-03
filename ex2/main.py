@@ -28,6 +28,10 @@ def tag_filter(tag):
 #nl.download('brown')
 #brown = nl.corpus.brown
 my_brown = brown.tagged_sents(categories='news')
+text = nl.pos_tag("And now for something completely different")
+#for sentence in my_brown:
+
+
 
 #### Need to use only tags with tag_filter function!!!
 training_set = my_brown[:round(0.9*len(my_brown))]
