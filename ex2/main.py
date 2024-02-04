@@ -100,6 +100,7 @@ def train_transition_hmm(training_set):
     return hmm
 
 
+
 def train_emission_hmm(training_set):
     tags_possible = {key[TAG_POSITION]: 0 for key in training_set}
     hmm = {key[WORD_POSITION]: tags_possible for key in training_set}
