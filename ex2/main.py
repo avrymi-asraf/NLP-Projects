@@ -106,14 +106,16 @@ def train_emission_hmm(training_set):
     hmm = {key[WORD_POSITION]: tags_possible for key in training_set}
     training_set_tags = [tagged_word[TAG_POSITION] for tagged_word in training_set]
     training_set_tags_with_amount = Counter(training_set_tags)
-    ################## this for loop adds value for the all tags for some reason - NOT GOOD!
+
     for tagged_word in training_set:
-        t = hmm[tagged_word[WORD_POSITION]]
-        t[tagged_word[TAG_POSITION]] += 1
+        hmm[tagged_word[WORD_POSITION]] = hmm[tagged_word[WORD_POSITION]].copy()
+        hmm[tagged_word[WORD_POSITION]][tagged_word[TAG_POSITION]] += 1
 
     for word_emission in hmm.values():
         for tag in word_emission:
             word_emission[tag] /= training_set_tags_with_amount[tag]
+
+    return hmm
 
 
 
