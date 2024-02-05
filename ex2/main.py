@@ -9,11 +9,12 @@ from collections import Counter
 #nl.download('punkt')
 START_TOKEN = 'STARTSTART'
 START_TAG = 'STARTTAG'
+UNKNOWN_WORD = 'UNKNOWNUNKNOWN'
+UNKNOWN_WORD_TAG = 'NN'
 #start_token_tagged = nl.pos_tag(nl.word_tokenize(START_TOKEN))
 start_token_tagged = [(START_TOKEN, START_TAG)]
 WORD_POSITION = 0
 TAG_POSITION = 1
-UNKNOWN_WORD_TAG = 'NN'
 SECTION = 'c'
 def contains_only_nonalphabetic(input_string):
     return not any(char.isalpha() for char in input_string)
@@ -43,14 +44,16 @@ def import_db():
     # make training set
     training_set = brown_db_with_start[:round(0.9 * len(brown_db_with_start))]
     training_set_flat = [item for sublist in training_set for item in sublist]
-    training_set_with_good_tags = [(word[0], tag_filter(word[1])) for word in training_set_flat]
+    training_set_with_good_tags_flat = [(word[0], tag_filter(word[1])) for word in training_set_flat]
 
     # make test set
     test_set = brown_db_with_start[round(0.9 * len(brown_db_with_start)):]
     test_set_flat = [item for sublist in test_set for item in sublist]
-    test_set_with_good_tags = [(word[0], tag_filter(word[1])) for word in test_set_flat]
+    test_set_with_good_tags_flat = [(word[0], tag_filter(word[1])) for word in test_set_flat]
+    test_set_with_good_tags_not_flat = [[(word[0], tag_filter(word[1])) for word in sublist] for sublist in test_set]
 
-    return [training_set_with_good_tags, test_set_with_good_tags]
+
+    return [training_set_with_good_tags_flat, test_set_with_good_tags_flat, test_set_with_good_tags_not_flat]
 
 def most_likely_baseline(training_set, tagged_word):
 
@@ -100,7 +103,6 @@ def train_transition_hmm(training_set):
     return hmm
 
 
-
 def train_emission_hmm(training_set):
     tags_possible = {key[TAG_POSITION]: 0 for key in training_set}
     hmm = {key[WORD_POSITION]: tags_possible for key in training_set}
@@ -115,17 +117,72 @@ def train_emission_hmm(training_set):
         for tag in word_emission:
             word_emission[tag] /= training_set_tags_with_amount[tag]
 
+    # making emission prob for unknown word
+    tags_unknown_word = tags_possible
+    tags_unknown_word[UNKNOWN_WORD_TAG] = 1
+    hmm[UNKNOWN_WORD] = tags_unknown_word
+
     return hmm
+
+
+def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
+    """
+    Viterbi algorithm for Hidden Markov Model (HMM).
+
+    Parameters:
+    - sentence: List of observed symbols
+    - tags: List of hidden states
+    - start_prob: Dictionary of initial state probabilities
+    - trans_prob: 2D dictionary of transition probabilities between states
+    - emit_prob: 2D dictionary of emission probabilities for each state and symbol
+
+    Returns:
+    - path: Most likely sequence of hidden states
+    - max_prob: Probability of the most likely path
+    """
+
+    # Initialize the Viterbi matrix and backpointer matrix
+    viterbi_mat = [{}]
+    backpointer = [{}]
+    # Initialization step
+    for tag in tags:
+        viterbi_mat[0][tag] = start_prob[tag] * emit_prob[tag][sentence[0]]
+        backpointer[0][tag] = None
+
+    # Recursion step
+    for t in range(1, len(sentence)):
+        viterbi_mat.append({})
+        backpointer.append({})
+        for state in tags:
+            max_prob, prev_state = max(
+                (viterbi_mat[t - 1][prev_state] * trans_prob[prev_state][state] * emit_prob[state][sentence[t]], prev_state)
+                for prev_state in tags
+            )
+            viterbi_mat[t][state] = max_prob
+            backpointer[t][state] = prev_state
+
+    # Termination step
+    max_prob, state = max((viterbi_mat[len(sentence) - 1][final_state], final_state) for final_state in tags)
+
+    # Backtrack to find the most likely path
+    path = [state]
+    for t in range(len(sentence) - 1, 0, -1):
+        state = backpointer[t][state]
+        path.insert(0, state)
+
+    return path, max_prob
+
+
 
 
 
 
 def main():
-    [training_set, test_set] = import_db()
+    [training_set_flat, test_set_flat, test_set_senteced] = import_db()
 
     if SECTION == 'b':
         # b section - DONE
-        test_set_unique_words = list(set(tuple(t) for t in test_set))
+        test_set_unique_words = list(set(tuple(t) for t in test_set_flat))
         test_set_unique_words.remove(start_token_tagged[0])
         num_of_words = len(test_set_unique_words)
         i = 0
@@ -135,12 +192,12 @@ def main():
         amount_unknown_words = 0
         for word in test_set_unique_words:
             i += 1
-            if word_in_training_set_checker(training_set, word):
-                if word[TAG_POSITION] == most_likely_baseline(training_set, word):
+            if word_in_training_set_checker(training_set_flat, word):
+                if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
                     correct_tags_known_words += 1
                 amount_known_words += 1
             else:
-                if word[TAG_POSITION] == most_likely_baseline(training_set, word):
+                if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
                     correct_tags_unknown_words += 1
                 amount_unknown_words += 1
 
@@ -150,9 +207,14 @@ def main():
 
     # c section
     elif SECTION == 'c':
-        #transition_hmm = train_transition_hmm(training_set)
-        emission_hmm = train_emission_hmm((training_set))
-        pass
+        transition_hmm = train_transition_hmm(training_set_flat)
+        emission_hmm = train_emission_hmm(training_set_flat)
+        tags = list({key[TAG_POSITION] for key in training_set_flat})
+        start_prob = {key[TAG_POSITION]: 1 for key in training_set_flat}
+
+        [path, max_prob] = viterbi(test_set_senteced[0], tags,transition_hmm, emission_hmm, start_prob)
+
+        print['path: ', path]
 
 
 
