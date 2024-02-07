@@ -4,6 +4,11 @@ from nltk.corpus import brown
 from collections import Counter
 from typing import List, Tuple, Dict, Union
 import logging as log
+import builtins
+
+def custom_print(*args, **kwargs):
+    new_args = [(round(arg, 3) if isinstance(arg, float) else arg) for arg in args]
+    builtins.print(*new_args, **kwargs)
 
 point = lambda: print(".", end="", flush=True)
 
@@ -134,7 +139,8 @@ def word_in_training_set_checker(training_set, tagged_word):
 
 
 def train_transition_hmm(training_set):
-    hmm = {key[TAG_POSITION]: {} for key in training_set}
+    tags_possible = {key[TAG_POSITION]: 0 for key in training_set}
+    hmm = {key[TAG_POSITION]: tags_possible for key in training_set}
     # counting the number of appearances of each bigram
     for i in range(len(training_set) - 1):
         current_word = training_set[i]
@@ -193,7 +199,7 @@ def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
     backpointer = [{}]
     # Initialization step
     for tag in tags:
-        viterbi_mat[0][tag] = start_prob[tag] * emit_prob[tag][sentence[0]]
+        viterbi_mat[0][tag] = start_prob[tag] * emit_prob[sentence[0]][tag]
         backpointer[0][tag] = None
     # Recursion step
     for t in range(1, len(sentence)):
@@ -204,7 +210,7 @@ def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
                 (
                     viterbi_mat[t - 1][prev_state]
                     * trans_prob[prev_state][state]
-                    * emit_prob[state][sentence[t]],
+                    * emit_prob.get(sentence[t], emit_prob[UNKNOWN_WORD])[state],
                     prev_state,
                 )
                 for prev_state in tags
@@ -221,8 +227,32 @@ def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
     for t in range(len(sentence) - 1, 0, -1):
         state = backpointer[t][state]
         path.insert(0, state)
-    return path, max_prob
+    return path
 
+
+def train_emission_laplace_hmm(training_set):
+    tags_possible = {key[TAG_POSITION]: 0 for key in training_set}
+    amount_of_words = len(list({word[WORD_POSITION] for word in training_set}))
+
+    hmm = {key[WORD_POSITION]: tags_possible for key in training_set}
+    training_set_tags = [tagged_word[TAG_POSITION] for tagged_word in training_set]
+    training_set_tags_with_amount = Counter(training_set_tags)
+    for tagged_word in training_set:
+        hmm[tagged_word[WORD_POSITION]] = hmm[tagged_word[WORD_POSITION]].copy()
+        hmm[tagged_word[WORD_POSITION]][tagged_word[TAG_POSITION]] += 1
+    for word_emission in hmm.values():
+        for tag in word_emission:
+            word_emission[tag] = (word_emission[tag] + 1)/(training_set_tags_with_amount[tag] + amount_of_words)
+    # making emission prob for unknown word
+    tags_unknown_word = tags_possible
+    for key in tags_unknown_word:
+        tags_unknown_word[key] = 1/amount_of_words
+    tags_unknown_word[UNKNOWN_WORD_TAG] = 0
+    sum_of_tags_prob = sum(tags_unknown_word.values())
+    tags_unknown_word[UNKNOWN_WORD_TAG] = 1 - sum_of_tags_prob
+
+    hmm[UNKNOWN_WORD] = tags_unknown_word
+    return hmm
 
 class HMM:
     """Hidden Markov Model class,
@@ -363,7 +393,56 @@ class HMM:
         best_last_tag = max(backpointer, key=lambda tag: backpointer[tag][1])
         return backpointer[best_last_tag][0], backpointer[best_last_tag][1]
 
+    def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
+        """
+        Viterbi algorithm for Hidden Markov Model (HMM).
 
+        Parameters:
+        - sentence: List of observed symbols
+        - tags: List of hidden states
+        - start_prob: Dictionary of initial state probabilities
+        - trans_prob: 2D dictionary of transition probabilities between states
+        - emit_prob: 2D dictionary of emission probabilities for each state and symbol
+
+        Returns:
+        - path: Most likely sequence of hidden states
+        - max_prob: Probability of the most likely path
+        """
+
+        # Initialize the Viterbi matrix and backpointer matrix
+        viterbi_mat = [{}]
+        backpointer = [{}]
+        # Initialization step
+        for tag in tags:
+            viterbi_mat[0][tag] = start_prob[tag] * emit_prob[sentence[0]][tag]
+            backpointer[0][tag] = None
+        # Recursion step
+        for t in range(1, len(sentence)):
+            viterbi_mat.append({})
+            backpointer.append({})
+            for state in tags:
+                max_prob, prev_state = max(
+                    (
+                        viterbi_mat[t - 1][prev_state]
+                        * trans_prob[prev_state][state]
+                        * emit_prob.get(sentence[t], emit_prob[UNKNOWN_WORD])[state],
+                        prev_state,
+                    )
+                    for prev_state in tags
+                )
+                viterbi_mat[t][state] = max_prob
+                backpointer[t][state] = prev_state
+        # Termination step
+        max_prob, state = max(
+            (viterbi_mat[len(sentence) - 1][final_state], final_state)
+            for final_state in tags
+        )
+        # Backtrack to find the most likely path
+        path = [state]
+        for t in range(len(sentence) - 1, 0, -1):
+            state = backpointer[t][state]
+            path.insert(0, state)
+        return path
 def get_all_tags(training_set: List[Tuple[str, str]]) -> List[str]:
     """
     Return list with all tags in the training set
@@ -381,73 +460,112 @@ def main():
 
     training_set_flat, test_set_flat, test_set_senteced = import_db()
 
-    if SECTION == "b":
-        # b section - DONE
-        test_set_unique_words = list(set(tuple(t) for t in test_set_flat))
-        test_set_unique_words.remove(start_token_tagged[0])
-        num_of_words = len(test_set_unique_words)
-        i = 0
-        correct_tags_known_words = 0
-        amount_known_words = 0
-        correct_tags_unknown_words = 0
-        amount_unknown_words = 0
-        for word in test_set_unique_words:
-            i += 1
-            if word_in_training_set_checker(training_set_flat, word):
-                if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
+
+    # b section - DONE
+    test_set_unique_words = list(set(tuple(t) for t in test_set_flat))
+    test_set_unique_words.remove(start_token_tagged[0])
+    num_of_words = len(test_set_unique_words)
+    i = 0
+    correct_tags_known_words = 0
+    amount_known_words = 0
+    correct_tags_unknown_words = 0
+    amount_unknown_words = 0
+    for word in test_set_unique_words:
+        i += 1
+        if word_in_training_set_checker(training_set_flat, word):
+            if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
+                correct_tags_known_words += 1
+            amount_known_words += 1
+        else:
+            if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
+                correct_tags_unknown_words += 1
+            amount_unknown_words += 1
+    total_error_rate_b_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
+    print('(b) Implementation of the most likely tag baseline:')
+    custom_print(
+        "\t The error rate for known words is   ",
+        1 - correct_tags_known_words / amount_known_words,
+    )
+    custom_print(
+        "\t The error rate for unknown words is ",
+        1 - correct_tags_unknown_words / amount_unknown_words,
+    )
+    custom_print(
+        "\t The total error rate is ",
+        1
+        - (correct_tags_known_words + correct_tags_unknown_words)
+        / (amount_unknown_words + amount_known_words),
+    )
+# c section
+
+    print("\nc section", end="")
+    # tags = get_all_tags(training_set_flat)
+    # point()
+    # hmm = HMM(tags)
+    # point()
+    # hmm.train_transition(training_set_flat)
+    # point()
+    # hmm.train_emission(training_set_flat)
+    # point()
+    # sentence = [word for (word, tag) in test_set_senteced[0]]
+    # [path, max_prob] = hmm.viterbi(sentence)
+    # print()
+    # print("path: ", path)
+    # print("max_prob: ", max_prob)
+    # print("sentece", test_set_senteced[0])
+
+    transition_hmm = train_transition_hmm(training_set_flat)
+
+    emission_hmm = train_emission_hmm(training_set_flat)
+
+    tags = list({key[TAG_POSITION] for key in training_set_flat})
+    start_prob = {key[TAG_POSITION]: 1 for key in training_set_flat}
+    correct_tags_known_words = 0
+    amount_known_words = 0
+    correct_tags_unknown_words = 0
+    amount_unknown_words = 0
+    for sentence in test_set_senteced:
+        sentence_words = [word for (word, tag) in sentence]
+        sentence_tags =[tag for (word, tag) in sentence]
+        path = viterbi(sentence_words, tags, transition_hmm, emission_hmm, start_prob)
+        for i in range(1, len(path)):
+            if word_in_training_set_checker(training_set_flat, sentence_words[i]):
+                if path[i] == sentence_tags[i]:
                     correct_tags_known_words += 1
                 amount_known_words += 1
             else:
-                if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
+                if path[i] == sentence_tags[i]:
                     correct_tags_unknown_words += 1
                 amount_unknown_words += 1
-        print(
-            "The error rate for known words is   ",
-            1 - correct_tags_known_words / amount_known_words,
-        )
-        print(
-            "The error rate for unknown words is ",
-            1 - correct_tags_unknown_words / amount_unknown_words,
-        )
-        print(
-            "The total error rate is ",
-            1
-            - (correct_tags_known_words + correct_tags_unknown_words)
-            / (amount_unknown_words + amount_known_words),
-        )
-    # c section
-    elif SECTION == "c":
-        print("c section", end="")
-        tags = get_all_tags(training_set_flat)
-        point()
-        hmm = HMM(tags)
-        point()
-        hmm.train_transition(training_set_flat)
-        point()
-        hmm.train_emission(training_set_flat)
-        point()
-        sentence = [word for (word, tag) in test_set_senteced[0]]
-        [path, max_prob] = hmm.viterbi(sentence)
-        print()
-        print("path: ", path)
-        print("max_prob: ", max_prob)
-        print("sentece", test_set_senteced[0])
 
-        # transition_hmm = train_transition_hmm(training_set_flat)
+    total_error_rate_c_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
 
-        # emission_hmm = train_emission_hmm(training_set_flat)
+    print('\n(c) Implementation of a bigram HMM tagger:')
 
-        # tags = list({key[TAG_POSITION] for key in training_set_flat})
+    custom_print(
+        "\t The error rate for known words is   ",
+        1 - correct_tags_known_words / amount_known_words,
+    )
+    custom_print(
+        "\t The error rate for unknown words is ",
+        1 - correct_tags_unknown_words / amount_unknown_words,
+    )
+    custom_print(
+        "\t The total error rate is ",
+        1
+        - (correct_tags_known_words + correct_tags_unknown_words)
+        / (amount_unknown_words + amount_known_words),
+    )
+    custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_c_part, " in error rate")
 
-        # start_prob = {key[TAG_POSITION]: 1 for key in training_set_flat}
+    # print("path: ", path)
+    # print('real: ', tags_word)
 
-        # [path, max_prob] = viterbi(
 
-        #     test_set_senteced[0], tags, transition_hmm, emission_hmm, start_prob
+# e section
 
-        # )
+    print("\ne section")
 
-        # print["path: ", path]
 
 
 if __name__ == "__main__":
