@@ -4,11 +4,12 @@ from nltk.corpus import brown
 from collections import Counter
 from typing import List, Tuple, Dict, Union
 import logging as log
+import re
 import builtins
 
 def custom_print(*args, **kwargs):
     new_args = [(round(arg, 3) if isinstance(arg, float) else arg) for arg in args]
-    builtins.print(*new_args, **kwargs)
+    builtins.print(*new_args, **kwargs, flush=True)
 
 point = lambda: print(".", end="", flush=True)
 
@@ -26,7 +27,7 @@ UNKNOWN_WORD_TAG = "NN"
 start_token_tagged = [(START_TOKEN, START_TAG)]
 WORD_POSITION = 0
 TAG_POSITION = 1
-# SECTION = "b"
+SECTIONS = "e"
 
 
 def contains_only_nonalphabetic(input_string: str) -> bool:
@@ -232,7 +233,7 @@ def viterbi(sentence, tags, trans_prob, emit_prob, start_prob):
     return path
 
 
-def train_emission_laplace_hmm(training_set, test_set):
+def train_emission_laplace_hmm(training_set, test_set, delta=1):
     unique_words = {}
     unique_test_words = {}
     for tagged_word in training_set:
@@ -256,14 +257,64 @@ def train_emission_laplace_hmm(training_set, test_set):
         hmm[tagged_word[TAG_POSITION]][tagged_word[WORD_POSITION]] += 1
     for tag, word_emission in hmm.items():
         for word in word_emission:
-            word_emission[word] = (word_emission[word] + 1) / (training_set_tags_with_amount[tag] + size_of_unique_words)
-        word_emission[UNKNOWN_WORD] = size_of_unique_test_words/size_of_unique_words
+            word_emission[word] = (word_emission[word] + delta) / (training_set_tags_with_amount[tag] + delta*size_of_unique_words)
+        word_emission[UNKNOWN_WORD] = 1/(size_of_unique_words + (training_set_tags_with_amount[tag]))
+        # word_emission[UNKNOWN_WORD] = size_of_unique_test_words/(size_of_unique_words + (training_set_tags_with_amount[tag]))
+
     # hmm[UNKNOWN_WORD_TAG][UNKNOWN_WORD] = 1
     # making emission prob for unknown word
     # tags_unknown_word = words_possible
     # tags_unknown_word[UNKNOWN_WORD] = 1
     #  hmm[UNKNOWN_WORD] = tags_unknown_word
     return hmm
+
+def contains_number(string):
+    return any(char.isdigit() for char in string)
+
+def pseudoword_for_numbers(word):
+    pattern_dec = r'^\d+\.\d+$'
+    pattern_num_comma_sep = r'^\d{1,3}(,\d{3})*$'
+    if '$' in word:
+        return 'MONEY'
+    elif len(word) > 1 and word.endswith(('th', 'st', 'nd')):
+        return 'ORD_NUM'
+    elif len(word) == 4 and word.isdigit():
+        return 'YEAR'
+    elif re.match(pattern_dec, word):
+        return 'DEC_NUM'
+    elif re.match(pattern_num_comma_sep, word):
+        return 'COMMA_SEP_NUM'
+    else:
+        return 'CONTAINS_DIGIT'
+
+def get_prefix(word):
+    bi_prefix = {'un', 'im', 'in', 'ir', 'il', 'de', 'ab', 'ex', 're', 'bi', 'co', 'en', 'em', 'be'}
+    tri_prefix = {'dis', 'non', 'mis', 'mal', 'out', 'sub', 'pre', 'uni', 'tri', 'pro'}
+    quad_prefix = {'anti', 'over', 'hypo', 'fore', 'post', 'mono', 'poly', 'omni', 'phil', 'bene',
+                   'ambi', 'homo', 'auto', 'circ'}
+
+def get_prefix(word):
+    bi_suffix = {'ed', 'er', '\'s', 'es', 'ly', 'er', 'en', 'el', 'al', 'ic', 'th', 'or'}
+    tri_suffix = {'ive', 'acy', 'ate', 'ify', 'ble', 'ous', 'ent', 'ant', 'est', 'ish',
+                  'ful', 'age', 'ity', 'dom', 'ism', 'ist', 'ian', 'ess', 'ize', 'ite', 'ing',
+                  'ale', 'ile', 'ogy', 'ers', 'ele', 'ane', 'ows', 'ine'}
+    quad_suffix = {'ance', 'ible', 'ment', 'less', 'ness', 'ence', 'tude', 'tion', 'sion',
+                   'hood', 'ship', 'ions', 'wood', 'port', 'main'}
+
+
+
+def pseudoword_for_letters(word):
+
+
+    pass
+def pseudoword_maker(word):
+
+    if contains_number(word):
+        return pseudoword_for_numbers(word)
+    else:
+        return pseudoword_for_letters(word)
+
+
 
 class HMM:
     """Hidden Markov Model class,
@@ -470,9 +521,10 @@ def get_all_tags(training_set: List[Tuple[str, str]]) -> List[str]:
 def main():
 
     training_set_flat, test_set_flat, test_set_senteced = import_db()
-    SECTION = 'b'
-    if SECTION == 'b':
+    if 'b' in SECTIONS:
         # b section - DONE
+        print('(b) Implementation of the most likely tag baseline:', flush=True)
+
         test_set_unique_words = list(set(tuple(t) for t in test_set_flat))
         test_set_unique_words.remove(start_token_tagged[0])
         num_of_words = len(test_set_unique_words)
@@ -492,7 +544,6 @@ def main():
                     correct_tags_unknown_words += 1
                 amount_unknown_words += 1
         total_error_rate_b_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
-        print('(b) Implementation of the most likely tag baseline:')
         custom_print(
             "\t The error rate for known words is   ",
             1 - correct_tags_known_words / amount_known_words,
@@ -508,9 +559,9 @@ def main():
             / (amount_unknown_words + amount_known_words),
         )
 
-    SECTION = 'c'
-    if SECTION == 'c':
+    if 'c' in SECTIONS:
         # c section
+        print('\n(c) Implementation of a bigram HMM tagger:', flush=True)
 
         # print("\nc section", end="")
         # tags = get_all_tags(training_set_flat)
@@ -554,7 +605,6 @@ def main():
 
         total_error_rate_c_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
 
-        print('\n(c) Implementation of a bigram HMM tagger:')
 
         custom_print(
             "\t The error rate for known words is   ",
@@ -570,18 +620,20 @@ def main():
             - (correct_tags_known_words + correct_tags_unknown_words)
             / (amount_unknown_words + amount_known_words),
         )
-        custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_c_part, " in error rate")
+        if 'b' in SECTIONS:
+            custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_c_part, " in error rate")
 
         # print("path: ", path)
         # print('real: ', tags_word)
 
 
 # d section
-    SECTION = 'd'
-    if SECTION == 'd':
+    if 'd' in SECTIONS:
         # print("\nd section")
-        emission_laplace_hmm = train_emission_laplace_hmm(training_set_flat, test_set_flat)
-        emission_hmm = train_emission_hmm(training_set_flat)
+        print('\n(d) Using Add-one smoothing', flush=True)
+
+        emission_laplace_hmm = train_emission_laplace_hmm(training_set_flat, test_set_flat, 1)
+        # emission_hmm = train_emission_hmm(training_set_flat)
         transition_hmm = train_transition_hmm(training_set_flat)
         tags = list({key[TAG_POSITION] for key in training_set_flat})
         start_prob = {key[TAG_POSITION]: 1 for key in training_set_flat}
@@ -605,7 +657,6 @@ def main():
 
         total_error_rate_d_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
 
-        print('\n(d) Using Add-one smoothing')
 
         custom_print(
             "\t The error rate for known words is   ",
@@ -622,8 +673,24 @@ def main():
             / (amount_unknown_words + amount_known_words),
         )
         total_error_rate_d_part = 1 - (correct_tags_known_words + correct_tags_unknown_words) / (amount_unknown_words + amount_known_words)
-        custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_d_part, " from (b) and ",total_error_rate_c_part/total_error_rate_d_part, " from (c)")
+        if 'b' in SECTIONS and 'c' in SECTIONS:
+            custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_d_part, " from (b) and ",total_error_rate_c_part/total_error_rate_d_part, " from (c)")
 
+    if 'e' in SECTIONS:
+        # print("\ne section")
+        print('\n(e) Using pseudo-words', flush=True)
+        words_in_training_set = []
+        unique_test_words = {}
+        for tagged_word in training_set_flat:
+            words_in_training_set.append(tagged_word[WORD_POSITION])
+        words_in_training_set = Counter(words_in_training_set)
+        words_less_than_5 = []
+        for word, amount in words_in_training_set.items():
+            if amount < 5:
+                words_less_than_5.append(word)
+        with open('words_less_than_5.txt', 'w') as file:
+            for item in words_less_than_5:
+                file.write(item + '\n')
 
 
 if __name__ == "__main__":
