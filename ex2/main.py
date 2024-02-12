@@ -279,7 +279,7 @@ def contains_number(string):
     return any(char.isdigit() for char in string)
 
 
-d = {
+numbers_patters = {
     r"(\$[\d,.]+)|([\d,.]+\$)": "<MONEY>",
     r"\d{2}": "<TowDigits>",
     r"\d{3}": "<ThreeDigits>",
