@@ -303,7 +303,6 @@ def replace_by_pseudoword(word: str, d: dict) -> str:
             return d[pattern]
 
 
-
 def pseudoword_to_number(word):
     pattern_dec = r"^\d+\.\d+$"
     pattern_num_comma_sep = r"^\d{1,3}(,\d{3})*$"
@@ -431,10 +430,18 @@ def get_suffix():
     return suffix_letters
 
 
+def replace_unkwon_words(word, list_of_prefix, list_of_serfix):
+    ret = ""
+    for pre in list_of_prefix:
+        if re.match(f"^{pre}", word):
+            ret += f"{pre.upper()}_"
+            break
+    for ser in list_of_serfix:
+        if re.match(f"{pre}$", word):
+            ret += f"{ser.upper()}"
+            break
+    return f"<{ret}>" if ret else "<UNKNOWN_WORD>"
 
-def pseudoword_for_letters(word):
-
-    pass
 
 
 def pseudoword_maker(word):
