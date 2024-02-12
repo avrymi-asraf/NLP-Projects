@@ -7,9 +7,11 @@ import logging as log
 import re
 import builtins
 
+
 def custom_print(*args, **kwargs):
     new_args = [(round(arg, 3) if isinstance(arg, float) else arg) for arg in args]
     builtins.print(*new_args, **kwargs, flush=True)
+
 
 point = lambda: print(".", end="", flush=True)
 
@@ -257,8 +259,12 @@ def train_emission_laplace_hmm(training_set, test_set, delta=1):
         hmm[tagged_word[TAG_POSITION]][tagged_word[WORD_POSITION]] += 1
     for tag, word_emission in hmm.items():
         for word in word_emission:
-            word_emission[word] = (word_emission[word] + delta) / (training_set_tags_with_amount[tag] + delta*size_of_unique_words)
-        word_emission[UNKNOWN_WORD] = 1/(size_of_unique_words + (training_set_tags_with_amount[tag]))
+            word_emission[word] = (word_emission[word] + delta) / (
+                training_set_tags_with_amount[tag] + delta * size_of_unique_words
+            )
+        word_emission[UNKNOWN_WORD] = 1 / (
+            size_of_unique_words + (training_set_tags_with_amount[tag])
+        )
         # word_emission[UNKNOWN_WORD] = size_of_unique_test_words/(size_of_unique_words + (training_set_tags_with_amount[tag]))
 
     # hmm[UNKNOWN_WORD_TAG][UNKNOWN_WORD] = 1
@@ -268,53 +274,136 @@ def train_emission_laplace_hmm(training_set, test_set, delta=1):
     #  hmm[UNKNOWN_WORD] = tags_unknown_word
     return hmm
 
+
 def contains_number(string):
     return any(char.isdigit() for char in string)
 
-def pseudoword_for_numbers(word):
-    pattern_dec = r'^\d+\.\d+$'
-    pattern_num_comma_sep = r'^\d{1,3}(,\d{3})*$'
-    if '$' in word:
-        return 'MONEY'
-    elif len(word) > 1 and word.endswith(('th', 'st', 'nd')):
-        return 'ORD_NUM'
+
+d = {
+    r'(\$[\d,.]+)|([\d,.]+\$)': "<MONEY>",
+}
+
+
+def replace_by_pseudoword(word: str, d: dict) -> str:
+    pass
+
+
+def pseudoword_to_number(word):
+    pattern_dec = r"^\d+\.\d+$"
+    pattern_num_comma_sep = r"^\d{1,3}(,\d{3})*$"
+    if "$" in word:
+        return "MONEY"
+    elif len(word) > 1 and word.endswith(("th", "st", "nd")):
+        return "ORD_NUM"
     elif len(word) == 4 and word.isdigit():
-        return 'YEAR'
+        return "YEAR"
     elif re.match(pattern_dec, word):
-        return 'DEC_NUM'
+        return "DEC_NUM"
     elif re.match(pattern_num_comma_sep, word):
-        return 'COMMA_SEP_NUM'
+        return "COMMA_SEP_NUM"
     else:
-        return 'CONTAINS_DIGIT'
+        return "CONTAINS_DIGIT"
+
 
 def get_prefix(word):
-    bi_prefix = {'un', 'im', 'in', 'ir', 'il', 'de', 'ab', 'ex', 're', 'bi', 'co', 'en', 'em', 'be'}
-    tri_prefix = {'dis', 'non', 'mis', 'mal', 'out', 'sub', 'pre', 'uni', 'tri', 'pro'}
-    quad_prefix = {'anti', 'over', 'hypo', 'fore', 'post', 'mono', 'poly', 'omni', 'phil', 'bene',
-                   'ambi', 'homo', 'auto', 'circ'}
+    bi_prefix = {
+        "un",
+        "im",
+        "in",
+        "ir",
+        "il",
+        "de",
+        "ab",
+        "ex",
+        "re",
+        "bi",
+        "co",
+        "en",
+        "em",
+        "be",
+    }
+    tri_prefix = {"dis", "non", "mis", "mal", "out", "sub", "pre", "uni", "tri", "pro"}
+    quad_prefix = {
+        "anti",
+        "over",
+        "hypo",
+        "fore",
+        "post",
+        "mono",
+        "poly",
+        "omni",
+        "phil",
+        "bene",
+        "ambi",
+        "homo",
+        "auto",
+        "circ",
+    }
+
 
 def get_prefix(word):
-    bi_suffix = {'ed', 'er', '\'s', 'es', 'ly', 'er', 'en', 'el', 'al', 'ic', 'th', 'or'}
-    tri_suffix = {'ive', 'acy', 'ate', 'ify', 'ble', 'ous', 'ent', 'ant', 'est', 'ish',
-                  'ful', 'age', 'ity', 'dom', 'ism', 'ist', 'ian', 'ess', 'ize', 'ite', 'ing',
-                  'ale', 'ile', 'ogy', 'ers', 'ele', 'ane', 'ows', 'ine'}
-    quad_suffix = {'ance', 'ible', 'ment', 'less', 'ness', 'ence', 'tude', 'tion', 'sion',
-                   'hood', 'ship', 'ions', 'wood', 'port', 'main'}
-
-
+    bi_suffix = {"ed", "er", "'s", "es", "ly", "er", "en", "el", "al", "ic", "th", "or"}
+    tri_suffix = {
+        "ive",
+        "acy",
+        "ate",
+        "ify",
+        "ble",
+        "ous",
+        "ent",
+        "ant",
+        "est",
+        "ish",
+        "ful",
+        "age",
+        "ity",
+        "dom",
+        "ism",
+        "ist",
+        "ian",
+        "ess",
+        "ize",
+        "ite",
+        "ing",
+        "ale",
+        "ile",
+        "ogy",
+        "ers",
+        "ele",
+        "ane",
+        "ows",
+        "ine",
+    }
+    quad_suffix = {
+        "ance",
+        "ible",
+        "ment",
+        "less",
+        "ness",
+        "ence",
+        "tude",
+        "tion",
+        "sion",
+        "hood",
+        "ship",
+        "ions",
+        "wood",
+        "port",
+        "main",
+    }
 
 
 def pseudoword_for_letters(word):
 
-
     pass
+
+
 def pseudoword_maker(word):
 
     if contains_number(word):
         return pseudoword_for_numbers(word)
     else:
         return pseudoword_for_letters(word)
-
 
 
 class HMM:
@@ -506,6 +595,8 @@ class HMM:
             state = backpointer[t][state]
             path.insert(0, state)
         return path
+
+
 def get_all_tags(training_set: List[Tuple[str, str]]) -> List[str]:
     """
     Return list with all tags in the training set
@@ -522,9 +613,9 @@ def get_all_tags(training_set: List[Tuple[str, str]]) -> List[str]:
 def main():
 
     training_set_flat, test_set_flat, test_set_senteced = import_db()
-    if 'b' in SECTIONS:
+    if "b" in SECTIONS:
         # b section - DONE
-        print('(b) Implementation of the most likely tag baseline:', flush=True)
+        print("(b) Implementation of the most likely tag baseline:", flush=True)
 
         test_set_unique_words = list(set(tuple(t) for t in test_set_flat))
         test_set_unique_words.remove(start_token_tagged[0])
@@ -544,7 +635,9 @@ def main():
                 if word[TAG_POSITION] == most_likely_baseline(training_set_flat, word):
                     correct_tags_unknown_words += 1
                 amount_unknown_words += 1
-        total_error_rate_b_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
+        total_error_rate_b_part = 1 - (
+            correct_tags_known_words + correct_tags_unknown_words
+        ) / (amount_unknown_words + amount_known_words)
         custom_print(
             "\t The error rate for known words is   ",
             1 - correct_tags_known_words / amount_known_words,
@@ -560,25 +653,9 @@ def main():
             / (amount_unknown_words + amount_known_words),
         )
 
-    if 'c' in SECTIONS:
+    if "c" in SECTIONS:
         # c section
-        print('\n(c) Implementation of a bigram HMM tagger:', flush=True)
-
-        # print("\nc section", end="")
-        # tags = get_all_tags(training_set_flat)
-        # point()
-        # hmm = HMM(tags)
-        # point()
-        # hmm.train_transition(training_set_flat)
-        # point()
-        # hmm.train_emission(training_set_flat)
-        # point()
-        # sentence = [word for (word, tag) in test_set_senteced[0]]
-        # [path, max_prob] = hmm.viterbi(sentence)
-        # print()
-        # print("path: ", path)
-        # print("max_prob: ", max_prob)
-        # print("sentece", test_set_senteced[0])
+        print("\n(c) Implementation of a bigram HMM tagger:", flush=True)
 
         transition_hmm = train_transition_hmm(training_set_flat)
 
@@ -592,8 +669,10 @@ def main():
         amount_unknown_words = 0
         for sentence in test_set_senteced:
             sentence_words = [word for (word, tag) in sentence]
-            sentence_tags =[tag for (word, tag) in sentence]
-            path = viterbi(sentence_words, tags, transition_hmm, emission_hmm, start_prob)
+            sentence_tags = [tag for (word, tag) in sentence]
+            path = viterbi(
+                sentence_words, tags, transition_hmm, emission_hmm, start_prob
+            )
             for i in range(1, len(path)):
                 if word_in_training_set_checker(training_set_flat, sentence_words[i]):
                     if path[i] == sentence_tags[i]:
@@ -604,8 +683,9 @@ def main():
                         correct_tags_unknown_words += 1
                     amount_unknown_words += 1
 
-        total_error_rate_c_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
-
+        total_error_rate_c_part = 1 - (
+            correct_tags_known_words + correct_tags_unknown_words
+        ) / (amount_unknown_words + amount_known_words)
 
         custom_print(
             "\t The error rate for known words is   ",
@@ -621,19 +701,28 @@ def main():
             - (correct_tags_known_words + correct_tags_unknown_words)
             / (amount_unknown_words + amount_known_words),
         )
-        if 'b' in SECTIONS:
-            custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_c_part, " in error rate")
+        if "b" in SECTIONS:
+            custom_print(
+                "\t The error rate in (b) was: ",
+                total_error_rate_b_part,
+                " and in (c) we got: ",
+                total_error_rate_c_part,
+                " improvement of ",
+                total_error_rate_b_part / total_error_rate_c_part,
+                " in error rate",
+            )
 
         # print("path: ", path)
         # print('real: ', tags_word)
 
-
-# d section
-    if 'd' in SECTIONS:
+    # d section
+    if "d" in SECTIONS:
         # print("\nd section")
-        print('\n(d) Using Add-one smoothing', flush=True)
+        print("\n(d) Using Add-one smoothing", flush=True)
 
-        emission_laplace_hmm = train_emission_laplace_hmm(training_set_flat, test_set_flat, 1)
+        emission_laplace_hmm = train_emission_laplace_hmm(
+            training_set_flat, test_set_flat, 1
+        )
         # emission_hmm = train_emission_hmm(training_set_flat)
         transition_hmm = train_transition_hmm(training_set_flat)
         tags = list({key[TAG_POSITION] for key in training_set_flat})
@@ -644,8 +733,10 @@ def main():
         amount_unknown_words = 0
         for sentence in test_set_senteced:
             sentence_words = [word for (word, tag) in sentence]
-            sentence_tags =[tag for (word, tag) in sentence]
-            path = viterbi(sentence_words, tags, transition_hmm, emission_laplace_hmm, start_prob)
+            sentence_tags = [tag for (word, tag) in sentence]
+            path = viterbi(
+                sentence_words, tags, transition_hmm, emission_laplace_hmm, start_prob
+            )
             for i in range(1, len(path)):
                 if word_in_training_set_checker(training_set_flat, sentence_words[i]):
                     if path[i] == sentence_tags[i]:
@@ -656,8 +747,9 @@ def main():
                         correct_tags_unknown_words += 1
                     amount_unknown_words += 1
 
-        total_error_rate_d_part = 1 - (correct_tags_known_words + correct_tags_unknown_words)/ (amount_unknown_words + amount_known_words)
-
+        total_error_rate_d_part = 1 - (
+            correct_tags_known_words + correct_tags_unknown_words
+        ) / (amount_unknown_words + amount_known_words)
 
         custom_print(
             "\t The error rate for known words is   ",
@@ -673,13 +765,25 @@ def main():
             - (correct_tags_known_words + correct_tags_unknown_words)
             / (amount_unknown_words + amount_known_words),
         )
-        total_error_rate_d_part = 1 - (correct_tags_known_words + correct_tags_unknown_words) / (amount_unknown_words + amount_known_words)
-        if 'b' in SECTIONS and 'c' in SECTIONS:
-            custom_print('\t The error rate in (b) was: ', total_error_rate_b_part, ' and in (c) we got: ', total_error_rate_c_part, " improvement of ", total_error_rate_b_part/total_error_rate_d_part, " from (b) and ",total_error_rate_c_part/total_error_rate_d_part, " from (c)")
+        total_error_rate_d_part = 1 - (
+            correct_tags_known_words + correct_tags_unknown_words
+        ) / (amount_unknown_words + amount_known_words)
+        if "b" in SECTIONS and "c" in SECTIONS:
+            custom_print(
+                "\t The error rate in (b) was: ",
+                total_error_rate_b_part,
+                " and in (c) we got: ",
+                total_error_rate_c_part,
+                " improvement of ",
+                total_error_rate_b_part / total_error_rate_d_part,
+                " from (b) and ",
+                total_error_rate_c_part / total_error_rate_d_part,
+                " from (c)",
+            )
 
-    if 'e' in SECTIONS:
+    if "e" in SECTIONS:
         # print("\ne section")
-        print('\n(e) Using pseudo-words', flush=True)
+        print("\n(e) Using pseudo-words", flush=True)
         words_in_training_set = []
         unique_test_words = {}
         for tagged_word in training_set_flat:
@@ -689,9 +793,9 @@ def main():
         for word, amount in words_in_training_set.items():
             if amount < 5:
                 words_less_than_5.append(word)
-        with open('words_less_than_5.txt', 'w') as file:
+        with open("words_less_than_5.txt", "w") as file:
             for item in words_less_than_5:
-                file.write(item + '\n')
+                file.write(item + "\n")
 
 
 if __name__ == "__main__":
