@@ -285,7 +285,10 @@ d = {
 
 
 def replace_by_pseudoword(word: str, d: dict) -> str:
-    pass
+    for pattern in d:
+        if re.fullmatch(pattern, word):
+            return d[pattern]
+
 
 
 def pseudoword_to_number(word):
@@ -305,92 +308,115 @@ def pseudoword_to_number(word):
         return "CONTAINS_DIGIT"
 
 
-def get_prefix(word):
-    bi_prefix = {
-        "un",
-        "im",
-        "in",
-        "ir",
-        "il",
-        "de",
-        "ab",
-        "ex",
-        "re",
-        "bi",
-        "co",
-        "en",
-        "em",
-        "be",
-    }
-    tri_prefix = {"dis", "non", "mis", "mal", "out", "sub", "pre", "uni", "tri", "pro"}
-    quad_prefix = {
-        "anti",
-        "over",
-        "hypo",
-        "fore",
-        "post",
-        "mono",
-        "poly",
-        "omni",
-        "phil",
-        "bene",
-        "ambi",
-        "homo",
-        "auto",
-        "circ",
-    }
+def get_prefix():
+    six_letters_prefix = (
+        'counter'
+    )
+    five_letters_prefix = (
+        'hyper'
+        'extra'
+        'inter'
+        'super'
+        'under'
+        'trans'
+    )
+    four_letters_prefix = (
+        'anti'
+        'fore'
+        'homo'
+        'mono'
+        'omni'
+        'semi'
+        'post'
+    )
+    three_letters_prefix = (
+        'dis'
+        'mal'
+        'mid'
+        'mis'
+        'neo'
+        'non'
+        'out'
+        'pre'
+        'sub'
+        'uni'
+    )
+    two_letters_prefix = (
+        'de'
+        'ex'
+        'il'
+        'in'
+        'ir'
+        're'
+        'un'
+        'bi'
+    )
 
+    prefix_letters = six_letters_prefix + five_letters_prefix + four_letters_prefix + three_letters_prefix + two_letters_prefix
 
-def get_prefix(word):
-    bi_suffix = {"ed", "er", "'s", "es", "ly", "er", "en", "el", "al", "ic", "th", "or"}
-    tri_suffix = {
-        "ive",
-        "acy",
-        "ate",
-        "ify",
-        "ble",
-        "ous",
-        "ent",
-        "ant",
-        "est",
-        "ish",
-        "ful",
-        "age",
-        "ity",
-        "dom",
-        "ism",
-        "ist",
-        "ian",
-        "ess",
-        "ize",
-        "ite",
-        "ing",
-        "ale",
-        "ile",
-        "ogy",
-        "ers",
-        "ele",
-        "ane",
-        "ows",
-        "ine",
-    }
-    quad_suffix = {
-        "ance",
-        "ible",
-        "ment",
-        "less",
-        "ness",
-        "ence",
-        "tude",
-        "tion",
-        "sion",
-        "hood",
-        "ship",
-        "ions",
-        "wood",
-        "port",
-        "main",
-    }
+    return prefix_letters
+
+def get_suffix():
+    six_letters_suffix = (
+        ''
+    )
+    five_letters_suffix = (
+        'athon'
+        'esque'
+        ''
+        ''
+        ''
+        ''
+    )
+    four_letters_suffix = (
+        'able'
+        'ible'
+        'cide'
+        'ette'
+        'fest'
+        'hood'
+        'ible'
+        'less'
+        'wash'
+        'ical'
+        'less'
+        'like'
+        'some'
+        'ance'
+        'ence'
+    )
+    three_letters_suffix = (
+        'ant'
+        'ent'
+        'dom'
+        'ery'
+        'ess'
+        'ish'
+        'ism'
+        'ist'
+        'ous'
+        'ate'
+        'ful'
+        'ian'
+        'ive'
+        'ery'
+        'ion'
+    )
+    two_letters_suffix = (
+        'er'
+        'fy'
+        'ly'
+        'ic'
+        'er'
+        'or'
+        ''
+        ''
+    )
+
+    suffix_letters = six_letters_suffix + five_letters_suffix + four_letters_suffix + three_letters_suffix + two_letters_suffix
+
+    return suffix_letters
+
 
 
 def pseudoword_for_letters(word):
