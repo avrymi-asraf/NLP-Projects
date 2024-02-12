@@ -280,7 +280,20 @@ def contains_number(string):
 
 
 d = {
-    r'(\$[\d,.]+)|([\d,.]+\$)': "<MONEY>",
+    r"(\$[\d,.]+)|([\d,.]+\$)": "<MONEY>",
+    r"\d{2}": "<TowDigits>",
+    r"\d{3}": "<ThreeDigits>",
+    r"\d{4}": "<FourDigits>",
+    r"\d{5,}": "<LongDigits>",
+    r"[A-Za-z]\d+": "<DigitsAndAlpha>",
+    r"[\d,.]+(-[\d,.])+": "<DigitAndDash>",
+    r"^\d+\.\d+": "<DigitsAndPeriod>",
+    r"[A-Z]{2,}": "<AllCaps>",
+    r"\d[\d,.]*(nd|th|st)": "<OrdNum>",
+    r"\d+(\'s)": "<Years>",
+    r"\d[\d,.]*%": "<Percentage>",
+    r"\d[\d,.]*-[A-Za-z]+": "<Units>",
+    r"[A-Za-z]+-([A-Za-z]+)": "<WordsAndDash>",
 }
 
 
