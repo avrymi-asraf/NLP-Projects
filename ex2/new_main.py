@@ -485,7 +485,7 @@ def main(section: str = "bcde"):
         print("\n(d) Using Add-one smoothing", flush=True)
         tags = get_all_tags(training_set_flat)
         hmm = HMM(tags)
-        hmm.train_emission(training_set_flat, delta=2)
+        hmm.train_emission(training_set_flat, delta=1)
         hmm.train_transition(training_set_flat)
         known_error_rate, unknown_error_rate, total_error_rate = hmm.error_rate_corpus(
             test_set_senteced
@@ -512,7 +512,7 @@ def main(section: str = "bcde"):
         print("\n(d) Using Add-one smoothing and pseudo-words", flush=True)
         tags = get_all_tags(training_set_flat)
         hmm = HMM(tags, filter_psudo_words)
-        hmm.train_emission(training_set_flat,delta=2)
+        hmm.train_emission(training_set_flat,delta=1)
         hmm.train_transition(training_set_flat)
         known_error_rate, unknown_error_rate, total_error_rate = hmm.error_rate_corpus(
             test_set_senteced
