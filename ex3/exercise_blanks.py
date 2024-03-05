@@ -144,7 +144,7 @@ def average_one_hots(sent, word_to_ind):
     for index, word in enumerate(sent_text_list):
         one_hot_arr[index, :] = get_one_hot(len(sent_text_list), word_to_ind[word])
 
-    average_one_hot = np.mean(one_hot_arr, axis=1) # average of columns
+    average_one_hot = np.mean(one_hot_arr, axis=1)  # average of columns
 
     return average_one_hot
 
@@ -207,7 +207,8 @@ class DataManager():
     evaluation.
     """
 
-    def __init__(self, data_type=ONEHOT_AVERAGE, use_sub_phrases=True, dataset_path="stanfordSentimentTreebank", batch_size=50,
+    def __init__(self, data_type=ONEHOT_AVERAGE, use_sub_phrases=True, dataset_path="stanfordSentimentTreebank",
+                 batch_size=50,
                  embedding_dim=None):
         """
         builds the data manager used for training and evaluation.
@@ -278,14 +279,13 @@ class DataManager():
         return self.torch_datasets[TRAIN][0][0].shape
 
 
-
-
 # ------------------------------------ Models ----------------------------------------------------
 
 class LSTM(nn.Module):
     """
     An LSTM for sentiment analysis with architecture as described in the exercise description.
     """
+
     def __init__(self, embedding_dim, hidden_dim, n_layers, dropout):
         return
 
@@ -300,6 +300,7 @@ class LogLinear(nn.Module):
     """
     general class for the log-linear models for sentiment analysis.
     """
+
     def __init__(self, embedding_dim):
         return
 
@@ -334,19 +335,80 @@ def train_epoch(model, data_iterator, optimizer, criterion):
     :param optimizer: the optimizer object for the training process.
     :param criterion: the criterion object for the training process.
     """
+    # Set the model to training mode
+    model.train()
 
-    return
+    total_loss = 0.0
+    correct_count = 0
+    total_count = 0
+
+    # Iterate over the data
+    for inputs, labels in data_iterator:
+        # Zero the gradients
+        optimizer.zero_grad()
+
+        # Forward pass
+        outputs = model(inputs)
+
+        # Compute the loss
+        loss = criterion(outputs, labels)
+        total_loss += loss.item()
+
+        # Backward pass
+        loss.backward()
+
+        # Update the model parameters
+        optimizer.step()
+
+        # Calculate accuracy
+        _, predicted = torch.max(outputs, 1)
+        correct_count += (predicted == labels).sum().item()
+        total_count += labels.size(0)
+
+    # Calculate accuracy and loss for the epoch
+    epoch_loss = total_loss / len(data_iterator)
+    epoch_accuracy = correct_count / total_count
+    return epoch_accuracy, epoch_loss
+    # return
 
 
 def evaluate(model, data_iterator, criterion):
     """
     evaluate the model performance on the given data
-    :param model: one of our models..
+    :param model: one of our models.
     :param data_iterator: torch data iterator for the relevant subset
     :param criterion: the loss criterion used for evaluation
     :return: tuple of (average loss over all examples, average accuracy over all examples)
     """
-    return
+    # Set the model to evaluation mode
+    model.eval()
+
+    total_loss = 0.0
+    correct_count = 0
+    total_count = 0
+
+    # Disable gradient computation
+    with torch.no_grad():
+        # Iterate over the data
+        for inputs, labels in data_iterator:
+            # Forward pass
+            outputs = model(inputs)
+
+            # Compute the loss
+            # loss = criterion(outputs, labels)
+            # total_loss += loss.item()
+
+            # Calculate accuracy
+            _, predicted = torch.max(outputs, 1)
+            correct_count += (predicted == labels).sum().item()
+            total_count += labels.size(0)
+
+    # Calculate average loss and accuracy
+    average_loss = total_loss / len(data_iterator)
+    average_accuracy = correct_count / total_count
+
+    return average_loss, average_accuracy
+    # return
 
 
 def get_predictions_for_data(model, data_iter):
@@ -372,14 +434,57 @@ def train_model(model, data_manager, n_epochs, lr, weight_decay=0.):
     :param lr: learning rate to be used for optimization
     :param weight_decay: parameter for l2 regularization
     """
-    return
+    # Set up the optimizer
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    # Define the loss criterion
+    criterion = torch.nn.CrossEntropyLoss()
+
+    train_losses = []
+    train_accuracies = []
+
+    for epoch in range(n_epochs):
+        # Training
+        train_acc, train_loss = train_epoch(model, data_manager.train_iterator, optimizer, criterion)
+        train_losses.append(train_loss)
+        train_accuracies.append(train_acc)
+
+        print(f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
+
+    return train_losses, train_accuracies
+
+    # return
 
 
 def train_log_linear_with_one_hot():
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
-    return
+    # Set batch size
+    batch_size = 64
+
+    # Create DataManager object
+    data_manager = DataManager(batch_size=batch_size)  # Initialize with your DataManager object
+
+    # Initialize your log linear model with one-hot representation
+    model = LogLinear(data_manager.get_input_shape())
+
+    # Set hyperparameters
+    n_epochs = 20
+    lr = 0.01
+    weight_decay = 0.001
+
+    # Create data iterators with the specified batch size
+    train_iterator = data_manager.get_torch_iterator()
+    val_iterator = data_manager.get_labels()
+
+    # Train the model
+    train_losses, train_accuracies = train_model(model, train_iterator, n_epochs, lr, weight_decay)
+    criterion = torch.nn.CrossEntropyLoss()
+    val_losses, val_accuracies = evaluate(model, val_iterator, criterion)
+
+    return train_losses, train_accuracies, val_losses, val_accuracies
+    # return
 
 
 def train_log_linear_with_w2v():
