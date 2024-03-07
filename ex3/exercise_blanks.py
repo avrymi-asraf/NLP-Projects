@@ -9,6 +9,7 @@ import operator
 import data_loader
 import pickle
 import tqdm
+import data_loader as DL
 
 # ------------------------------------------- Constants ----------------------------------------
 
@@ -302,13 +303,28 @@ class LogLinear(nn.Module):
     """
 
     def __init__(self, embedding_dim):
-        return
+        super(LogLinear, self).__init__()
+        self.linear = nn.Linear(embedding_dim, 2)  # 2 for binary classification (positive or negative sentiment)
 
     def forward(self, x):
-        return
+        # Forward pass
+        out = self.linear(x)
+        return out
 
     def predict(self, x):
-        return
+        """
+        Predicts the sentiment label for input x.
+        :param x: input data tensor of shape (batch_size, embedding_dim)
+        :return: predicted sentiment labels (0 for negative, 1 for positive) tensor of shape (batch_size,)
+        """
+        with torch.no_grad():
+            # Forward pass
+            out = self.forward(x)
+            # Apply softmax to get probabilities
+            probabilities = torch.sigmoid(out)
+            # Get predicted class (0 for negative, 1 for positive)
+            predicted_classes = torch.argmax(probabilities, dim=1)
+        return predicted_classes
 
 
 # ------------------------- training functions -------------
@@ -323,7 +339,16 @@ def binary_accuracy(preds, y):
     :return: scalar value - (<number of accurate predictions> / <number of examples>)
     """
 
-    return
+    # Convert predictions and labels to numpy arrays if they're tensors
+    preds = preds.numpy() if isinstance(preds, torch.Tensor) else preds
+    y = y.numpy() if isinstance(y, torch.Tensor) else y
+
+    # Calculate the accuracy
+    correct = np.sum(preds == y)
+    total = len(preds)
+    accuracy = correct / total
+
+    return accuracy
 
 
 def train_epoch(model, data_iterator, optimizer, criterion):
@@ -421,7 +446,24 @@ def get_predictions_for_data(model, data_iter):
     :param data_iter: torch iterator as given by the DataManager
     :return:
     """
-    return
+    model.eval()  # Set model to evaluation mode
+    all_predictions = []
+
+    with torch.no_grad():
+        for inputs, _ in data_iter: # TODO check if good
+            # Forward pass
+            outputs = model(inputs)
+
+            # Get predictions (assuming the model returns class probabilities)
+            _, predicted = torch.max(outputs, 1)
+
+            # Convert to numpy array and accumulate
+            all_predictions.extend(predicted.numpy())
+
+    # Convert the accumulated predictions to a numpy array
+    all_predictions = np.array(all_predictions)
+
+    return all_predictions
 
 
 def train_model(model, data_manager, n_epochs, lr, weight_decay=0.):
@@ -464,7 +506,7 @@ def train_log_linear_with_one_hot():
     batch_size = 64
 
     # Create DataManager object
-    data_manager = DataManager(batch_size=batch_size)  # Initialize with your DataManager object
+    data_manager = DataManager(batch_size=batch_size, data_type=ONEHOT_AVERAGE)  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape())
