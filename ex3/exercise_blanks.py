@@ -1,3 +1,4 @@
+from typing import Literal, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,6 +11,7 @@ import data_loader
 import pickle
 import tqdm
 import data_loader as DL
+import time
 
 # ------------------------------------------- Constants ----------------------------------------
 
@@ -23,6 +25,7 @@ W2V_SEQUENCE = "w2v_sequence"
 TRAIN = "train"
 VAL = "val"
 TEST = "test"
+DataType = Literal["train", "val", "test"]
 
 
 # ------------------------------------------ Helper methods and classes --------------------------
@@ -150,7 +153,7 @@ def average_one_hots(sent, word_to_ind):
     one_hot_arr = np.zeros((len(word_to_ind), len(sent_text_list)))
 
     for index, word in enumerate(sent_text_list):
-        one_hot_arr[index, :] = get_one_hot(len(sent_text_list), word_to_ind[word])
+        one_hot_arr[:, index] = get_one_hot(len(word_to_ind), word_to_ind[word])
 
     average_one_hot = np.mean(one_hot_arr, axis=1)  # average of columns
 
@@ -165,7 +168,7 @@ def get_word_to_ind(words_list):
     :return: the dictionary mapping words to the index
     """
     word_set = set(words_list)
-    return {word: i for word, i in enumerate(word_set)}
+    return {word: i for i, word in enumerate(word_set)}
 
 
 def sentence_to_embedding(sent, word_to_vec, seq_len, embedding_dim=300):
@@ -275,7 +278,7 @@ class DataManager:
             for k, dataset in self.torch_datasets.items()
         }
 
-    def get_torch_iterator(self, data_subset=TRAIN):
+    def get_torch_iterator(self, data_subset: DataType = TRAIN):
         """
         :param data_subset: one of TRAIN VAL and TEST
         :return: torch batches iterator for this part of the datset
@@ -294,7 +297,7 @@ class DataManager:
         """
         :return: the shape of a single example from this dataset (only of x, ignoring y the label).
         """
-        return self.torch_datasets[TRAIN][0][0].shape
+        return self.torch_datasets[TRAIN][0][0].shape[0]
 
 
 # ------------------------------------ Models ----------------------------------------------------
@@ -364,7 +367,7 @@ def binary_accuracy(preds, y):
     return (preds == y).mean()
 
 
-def train_epoch(model, data_iterator, optimizer, criterion):
+def train_epoch(model, data_iterator, optimizer, criterion, device="cpu"):
     """
     This method operates one epoch (pass over the whole train set) of training of the given model,
     and returns the accuracy and loss for this epoch
@@ -372,45 +375,43 @@ def train_epoch(model, data_iterator, optimizer, criterion):
     :param data_iterator: an iterator, iterating over the training data for the model.
     :param optimizer: the optimizer object for the training process.
     :param criterion: the criterion object for the training process.
+    :return: Touple(epoch_accuracy, epoch_loss)
     """
     # Set the model to training mode
     model.train()
 
-    total_loss = 0.0
-    correct_count = 0
-    total_count = 0
+    # total_loss = 0.0
+    # correct_count = 0
+    # total_count = 0
 
     # Iterate over the data
-    for inputs, labels in data_iterator:
+    for inputs, labels in tqdm.tqdm(data_iterator):
+        inputs, labels = inputs.to(device), labels.to(device)
         # Zero the gradients
         optimizer.zero_grad()
-
         # Forward pass
         outputs = model(inputs)
-
         # Compute the loss
-        loss = criterion(outputs, labels)
-        total_loss += loss.item()
+        loss = criterion(outputs.reshape(-1), labels)
+        # total_loss += loss.detach().sum().item()
 
         # Backward pass
         loss.backward()
-
-        # Update the model parameters
         optimizer.step()
 
         # Calculate accuracy
-        _, predicted = torch.max(outputs, 1)
-        correct_count += (predicted == labels).sum().item()
-        total_count += labels.size(0)
+        # predicted = model.predict(inputs)
+        # correct_count += (predicted == labels).sum().item()
+        # # total_count += labels.size(0)
 
     # Calculate accuracy and loss for the epoch
-    epoch_loss = total_loss / len(data_iterator)
-    epoch_accuracy = correct_count / total_count
-    return epoch_accuracy, epoch_loss
+    # epoch_loss = total_loss / len(data_iterator)
+    # epoch_accuracy = correct_count / total_count
+    # return epoch_accuracy, epoch_loss
     # return
 
 
-def evaluate(model, data_iterator, criterion):
+def evaluate(model, data_iterator, criterion, device="cpu"):
     """
     evaluate the model performance on the given data
     :param model: one of our models.
@@ -429,15 +430,16 @@ def evaluate(model, data_iterator, criterion):
     with torch.no_grad():
         # Iterate over the data
         for inputs, labels in data_iterator:
+            inputs, labels = inputs.to(device), labels.to(device)
             # Forward pass
             outputs = model(inputs)
 
             # Compute the loss
-            # loss = criterion(outputs, labels)
-            # total_loss += loss.item()
+            loss = criterion(outputs.reshape(-1), labels)
+            total_loss += loss.item()
 
             # Calculate accuracy
-            _, predicted = torch.max(outputs, 1)
+            predicted = model.predict(inputs)
             correct_count += (predicted == labels).sum().item()
             total_count += labels.size(0)
 
@@ -446,7 +448,6 @@ def evaluate(model, data_iterator, criterion):
     average_accuracy = correct_count / total_count
 
     return average_loss, average_accuracy
-    # return
 
 
 def get_predictions_for_data(model, data_iter):
@@ -479,7 +480,9 @@ def get_predictions_for_data(model, data_iter):
     return all_predictions
 
 
-def train_model(model, data_manager, n_epochs, lr, weight_decay=0.0):
+def train_model(
+    model, data_manager: DataManager, n_epochs, lr, weight_decay=0.0, device="cpu"
+):
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
     optimizer with all parameters but learning rate and weight decay set to default.
@@ -500,22 +503,23 @@ def train_model(model, data_manager, n_epochs, lr, weight_decay=0.0):
 
     for epoch in range(n_epochs):
         # Training
-        train_acc, train_loss = train_epoch(
-            model, data_manager.train_iterator, optimizer, criterion
+        start_time = time.time()
+        train_epoch(model, data_manager.get_torch_iterator(TRAIN), optimizer, criterion)
+        train_loss, train_acc = evaluate(
+            model, data_manager.get_torch_iterator(VAL), criterion
         )
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
+        duration_time = time.time() - start_time()
 
         print(
-            f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}"
+            f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time}"
         )
 
     return train_losses, train_accuracies
 
-    # return
 
-
-def train_log_linear_with_one_hot():
+def train_log_linear_with_one_hot(device="cpu"):
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
@@ -524,11 +528,13 @@ def train_log_linear_with_one_hot():
 
     # Create DataManager object
     data_manager = DataManager(
-        batch_size=batch_size, data_type=ONEHOT_AVERAGE
+        batch_size=batch_size,
+        data_type=ONEHOT_AVERAGE,
+        dataset_path="ex3\\stanfordSentimentTreebank",
     )  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
-    model = LogLinear(data_manager.get_input_shape())
+    model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
     n_epochs = 20
@@ -536,18 +542,16 @@ def train_log_linear_with_one_hot():
     weight_decay = 0.001
 
     # Create data iterators with the specified batch size
-    train_iterator = data_manager.get_torch_iterator()
-    val_iterator = data_manager.get_labels()
-
     # Train the model
     train_losses, train_accuracies = train_model(
-        model, train_iterator, n_epochs, lr, weight_decay
+        model, data_manager, n_epochs, lr, weight_decay, device=device
     )
     criterion = torch.nn.CrossEntropyLoss()
-    val_losses, val_accuracies = evaluate(model, val_iterator, criterion)
+    test_losses, test_accuraies = evaluate(
+        model, data_manager.get_torch_iterator(TEST), criterion, device=device
+    )
 
-    return train_losses, train_accuracies, val_losses, val_accuracies
-    # return
+    return test_losses, test_accuraies
 
 
 def train_log_linear_with_w2v():
