@@ -164,11 +164,8 @@ def get_word_to_ind(words_list):
     :param words_list: a list of words
     :return: the dictionary mapping words to the index
     """
-    word_to_ind = {}
-    for index, word in enumerate(words_list):
-        if word not in word_to_ind:
-            word_to_ind[word] = index
-    return word_to_ind
+    word_set = set(words_list)
+    return {word: i for word, i in enumerate(word_set)}
 
 
 def sentence_to_embedding(sent, word_to_vec, seq_len, embedding_dim=300):
