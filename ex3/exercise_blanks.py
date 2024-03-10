@@ -510,7 +510,7 @@ def train_model(
         )
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
-        duration_time = time.time() - start_time()
+        duration_time = time.time() - start_time
 
         print(
             f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time}"
