@@ -364,16 +364,7 @@ def binary_accuracy(preds, y):
     :return: scalar value - (<number of accurate predictions> / <number of examples>)
     """
 
-    # Convert predictions and labels to numpy arrays if they're tensors
-    preds = preds.numpy() if isinstance(preds, torch.Tensor) else preds
-    y = y.numpy() if isinstance(y, torch.Tensor) else y
-
-    # Calculate the accuracy
-    correct = np.sum(preds == y)
-    total = len(preds)
-    accuracy = correct / total
-
-    return accuracy
+    return (preds == y).mean()
 
 
 def train_epoch(model, data_iterator, optimizer, criterion):
