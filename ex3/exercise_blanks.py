@@ -534,7 +534,7 @@ def train_model(
     return run_data
 
 
-def train_log_linear_with_one_hot(device="cpu") -> pd.DataFrame:
+def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.DataFrame:
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
@@ -546,6 +546,7 @@ def train_log_linear_with_one_hot(device="cpu") -> pd.DataFrame:
         batch_size=batch_size,
         data_type=ONEHOT_AVERAGE,
         dataset_path="ex3\\stanfordSentimentTreebank",
+        use_sub_phrases=use_sub_phrases,
     )  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
@@ -582,7 +583,7 @@ def train_lstm_with_w2v():
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    record_data = train_log_linear_with_one_hot(device)
+    record_data = train_log_linear_with_one_hot(device,use_sub_phrases=False)
     record_data.to_csv("record_data.csv")
 
     # train_log_linear_with_w2v()
