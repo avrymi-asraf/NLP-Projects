@@ -570,6 +570,7 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
-    train_log_linear_with_one_hot()
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    train_log_linear_with_one_hot(device)
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
