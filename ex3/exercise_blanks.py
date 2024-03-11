@@ -12,6 +12,8 @@ import pickle
 import tqdm
 import data_loader as DL
 import time
+import pandas as pd
+import plotly
 
 # ------------------------------------------- Constants ----------------------------------------
 
@@ -367,7 +369,9 @@ def binary_accuracy(preds, y):
     return (preds == y).mean()
 
 
-def train_epoch(model, data_iterator, optimizer, criterion, device="cpu"):
+def train_epoch(
+    model, data_iterator, optimizer, criterion, device="cpu"
+) -> Tuple[float, float]:
     """
     This method operates one epoch (pass over the whole train set) of training of the given model,
     and returns the accuracy and loss for this epoch
@@ -380,9 +384,9 @@ def train_epoch(model, data_iterator, optimizer, criterion, device="cpu"):
     # Set the model to training mode
     model.train()
 
-    # total_loss = 0.0
-    # correct_count = 0
-    # total_count = 0
+    total_loss = 0.0
+    correct_count = 0
+    total_count = 0
 
     # Iterate over the data
     for inputs, labels in tqdm.tqdm(data_iterator):
@@ -393,22 +397,21 @@ def train_epoch(model, data_iterator, optimizer, criterion, device="cpu"):
         outputs = model(inputs)
         # Compute the loss
         loss = criterion(outputs.reshape(-1), labels)
-        # total_loss += loss.detach().sum().item()
+        total_loss += loss.detach().item()
 
         # Backward pass
         loss.backward()
         optimizer.step()
 
         # Calculate accuracy
-        # predicted = model.predict(inputs)
-        # correct_count += (predicted == labels).sum().item()
-        # # total_count += labels.size(0)
+        predicted = model.predict(inputs)
+        correct_count += (predicted == labels).sum().item()
+        total_count += labels.size(0)
 
     # Calculate accuracy and loss for the epoch
-    # epoch_loss = total_loss / len(data_iterator)
-    # epoch_accuracy = correct_count / total_count
-    # return epoch_accuracy, epoch_loss
-    # return
+    epoch_loss = total_loss / len(data_iterator)
+    epoch_accuracy = correct_count / total_count
+    return epoch_accuracy, epoch_loss
 
 
 def evaluate(model, data_iterator, criterion, device="cpu"):
@@ -482,7 +485,7 @@ def get_predictions_for_data(model, data_iter):
 
 def train_model(
     model, data_manager: DataManager, n_epochs, lr, weight_decay=0.0, device="cpu"
-):
+) -> Tuple[float, float, float, float]:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
     optimizer with all parameters but learning rate and weight decay set to default.
@@ -498,34 +501,40 @@ def train_model(
     # Define the loss criterion
     criterion = torch.nn.CrossEntropyLoss()
 
-    train_losses = []
-    train_accuracies = []
+    run_data = pd.DataFrame(
+        {
+            "train_loss": float(),
+            "train_acc": float(),
+            "val_loss": float(),
+            "val_acc": float(),
+        },
+        index=range(n_epochs),
+    )
 
     for epoch in range(n_epochs):
         # Training
         start_time = time.time()
-        train_epoch(
+        train_loss, train_acc = train_epoch(
             model,
             data_manager.get_torch_iterator(TRAIN),
             optimizer,
             criterion,
             device=device,
         )
-        train_loss, train_acc = evaluate(
+        val_loss, val_acc = evaluate(
             model, data_manager.get_torch_iterator(VAL), criterion, device=device
         )
-        train_losses.append(train_loss)
-        train_accuracies.append(train_acc)
+        run_data.iloc[epoch] = [train_loss, train_acc, val_loss, val_acc]
         duration_time = time.time() - start_time
 
         print(
             f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time}"
         )
 
-    return train_losses, train_accuracies
+    return run_data
 
 
-def train_log_linear_with_one_hot(device="cpu"):
+def train_log_linear_with_one_hot(device="cpu") -> pd.DataFrame:
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
@@ -549,15 +558,11 @@ def train_log_linear_with_one_hot(device="cpu"):
 
     # Create data iterators with the specified batch size
     # Train the model
-    train_losses, train_accuracies = train_model(
+    train_record_data = train_model(
         model, data_manager, n_epochs, lr, weight_decay, device=device
     )
-    criterion = torch.nn.CrossEntropyLoss()
-    test_losses, test_accuraies = evaluate(
-        model, data_manager.get_torch_iterator(TEST), criterion, device=device
-    )
 
-    return test_losses, test_accuraies
+    return train_record_data
 
 
 def train_log_linear_with_w2v():
@@ -577,6 +582,9 @@ def train_lstm_with_w2v():
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    train_log_linear_with_one_hot(device)
+    record_data = train_log_linear_with_one_hot(device)
+    record_data.to_csv('record_data.csv')
+
+
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
