@@ -504,9 +504,15 @@ def train_model(
     for epoch in range(n_epochs):
         # Training
         start_time = time.time()
-        train_epoch(model, data_manager.get_torch_iterator(TRAIN), optimizer, criterion)
+        train_epoch(
+            model,
+            data_manager.get_torch_iterator(TRAIN),
+            optimizer,
+            criterion,
+            device=device,
+        )
         train_loss, train_acc = evaluate(
-            model, data_manager.get_torch_iterator(VAL), criterion
+            model, data_manager.get_torch_iterator(VAL), criterion, device=device
         )
         train_losses.append(train_loss)
         train_accuracies.append(train_acc)
@@ -570,7 +576,7 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     train_log_linear_with_one_hot(device)
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
