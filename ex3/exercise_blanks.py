@@ -346,7 +346,7 @@ class LogLinear(nn.Module):
             # Forward pass
             out = self.forward(x)
             # Apply softmax to get probabilities
-            probabilities = torch.sigmoid(out)
+            out = torch.sigmoid(out)
             # Get predicted class (0 for negative, 1 for positive)
             predicted_classes = (out < 0.5).to(
                 torch.int
@@ -411,7 +411,7 @@ def train_epoch(
     # Calculate accuracy and loss for the epoch
     epoch_loss = total_loss / len(data_iterator)
     epoch_accuracy = correct_count / total_count
-    return epoch_accuracy, epoch_loss
+    return epoch_loss, epoch_accuracy
 
 
 def evaluate(model, data_iterator, criterion, device="cpu"):
@@ -528,7 +528,7 @@ def train_model(
         duration_time = time.time() - start_time
 
         print(
-            f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time}"
+            f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time:.1f}"
         )
 
     return run_data
@@ -583,8 +583,7 @@ def train_lstm_with_w2v():
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     record_data = train_log_linear_with_one_hot(device)
-    record_data.to_csv('record_data.csv')
-
+    record_data.to_csv("record_data.csv")
 
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
