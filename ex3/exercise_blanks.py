@@ -485,7 +485,7 @@ def get_predictions_for_data(model, data_iter):
 
 def train_model(
     model, data_manager: DataManager, n_epochs, lr, weight_decay=0.0, device="cpu"
-) -> Tuple[float, float, float, float]:
+) -> pd.DataFrame:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
     optimizer with all parameters but learning rate and weight decay set to default.
@@ -582,8 +582,8 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    record_data = train_log_linear_with_one_hot(device,use_sub_phrases=False)
+    device: Literal['cuda', 'cpu'] = "cuda" if torch.cuda.is_available() else "cpu"
+    record_data = train_log_linear_with_one_hot(device, use_sub_phrases=False)
     record_data.to_csv("record_data.csv")
 
     # train_log_linear_with_w2v()
