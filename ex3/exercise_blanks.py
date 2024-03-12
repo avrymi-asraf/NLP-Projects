@@ -1,4 +1,4 @@
-from typing import Literal, Tuple
+from typing import Dict, Literal, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -127,7 +127,9 @@ def create_or_load_slim_w2v(words_list, cache_w2v=False):
     return w2v_emb_dict
 
 
-def get_w2v_average(sent, word_to_vec, embedding_dim):
+def get_w2v_average(
+    sent: DL.Sentence, word_to_vec: Dict[str, np.ndarray], embedding_dim: int
+) -> torch.Tensor:
     """
     This method gets a sentence and returns the average word embedding of the words consisting
     the sentence.
@@ -136,7 +138,16 @@ def get_w2v_average(sent, word_to_vec, embedding_dim):
     :param embedding_dim: the dimension of the word embedding vectors
     :return The average embedding vector as numpy ndarray.
     """
-    return
+    #return zeoros + mean to avoid empty tensor
+    return torch.zeros(300) + (
+        torch.tensor(
+            np.array(
+                list(word_to_vec[w] for w in sent.text if w in word_to_vec),
+            )
+        )
+        .mean(dim=0)
+        .to(torch.float64)
+    )
 
 
 def get_one_hot(size, ind):
@@ -509,7 +520,7 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Define the loss criterion
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     run_data = pd.DataFrame(
         {
@@ -549,9 +560,7 @@ def train_model(
     return run_data
 
 
-def train_log_linear_with_one_hot(
-    device="cpu", use_sub_phrases=True
-) -> Tuple[pd.DataFrame, LogLinear]:
+def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.DataFrame:
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
@@ -602,15 +611,62 @@ def train_log_linear_with_one_hot(
         f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
     )
 
-    return train_record_data, model
+    return train_record_data
 
 
-def train_log_linear_with_w2v():
+def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     """
     Here comes your code for training and evaluation of the log linear model with word embeddings
     representation.
     """
-    return
+
+    # Set batch size
+    batch_size = 64
+
+    # Create DataManager object
+    data_manager = DataManager(
+        batch_size=batch_size,
+        data_type=W2V_AVERAGE,
+        dataset_path="ex3\\stanfordSentimentTreebank",
+    )  # Initialize with your DataManager object
+
+    # Initialize your log linear model with one-hot representation
+    model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
+
+    # Set hyperparameters
+    n_epochs = 20
+    lr = 0.01
+    weight_decay = 0.001
+
+    # Create data iterators with the specified batch size
+    # Train the model
+    train_record_data = train_model(
+        model, data_manager, n_epochs, lr, weight_decay, device=device
+    )
+    test_loss, test_acc = evaluate(
+        model,
+        data_manager.get_torch_iterator(TEST),
+        torch.nn.CrossEntropyLoss(),
+    )
+    print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
+
+    all_predict = get_predictions_for_data(
+        model, data_manager.get_torch_iterator(TEST)
+    ).reshape(-1)
+    all_true_value = data_manager.get_labels(TEST)
+    ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
+    ind_rare_words = DL.get_rare_words_examples(
+        data_manager.sentences[TEST], data_manager.sentiment_dataset
+    )
+    acc_rare_words = binary_accuracy(
+        all_predict[ind_rare_words], all_true_value[ind_rare_words]
+    )
+    acc_negated = binary_accuracy(all_predict[ind_negated], all_true_value[ind_negated])
+    print(
+        f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
+    )
+
+    return train_record_data
 
 
 def train_lstm_with_w2v():
@@ -623,8 +679,10 @@ def train_lstm_with_w2v():
 if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    record_data, model = train_log_linear_with_one_hot(device)
-    record_data.to_csv("record_data.csv")
 
-    # train_log_linear_with_w2v()
+    # record_data = train_log_linear_with_one_hot(device)
+    # record_data.to_csv("record_data_one_hot.csv")
+
+    record_data = train_log_linear_with_w2v()
+    record_data.to_csv("record_data_one_hot.csv")
     # train_lstm_with_w2v()
