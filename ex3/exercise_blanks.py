@@ -14,6 +14,7 @@ import data_loader as DL
 import time
 import pandas as pd
 import plotly
+import sys
 
 # ------------------------------------------- Constants ----------------------------------------
 
@@ -250,6 +251,7 @@ class DataManager:
 
         # map data splits to sentence input preperation functions
         words_list = list(self.sentiment_dataset.get_word_counts().keys())
+        self.words_list = words_list
         if data_type == ONEHOT_AVERAGE:
             self.sent_func = average_one_hots
             self.sent_func_kwargs = {"word_to_ind": get_word_to_ind(words_list)}
@@ -349,7 +351,7 @@ class LogLinear(nn.Module):
             out = torch.sigmoid(out)
             # Get predicted class (0 for negative, 1 for positive)
             predicted_classes = (out < 0.5).to(
-                torch.int
+                torch.long
             )  # TODO what we do with values between 0.4 - 0.6
         return predicted_classes
 
@@ -397,14 +399,14 @@ def train_epoch(
         outputs = model(inputs)
         # Compute the loss
         loss = criterion(outputs.reshape(-1), labels)
-        total_loss += loss.detach().item()
+        total_loss += loss.item()
 
         # Backward pass
         loss.backward()
         optimizer.step()
 
         # Calculate accuracy
-        predicted = model.predict(inputs)
+        predicted = model.predict(inputs).reshape(-1)
         correct_count += (predicted == labels).sum().item()
         total_count += labels.size(0)
 
@@ -442,7 +444,7 @@ def evaluate(model, data_iterator, criterion, device="cpu"):
             total_loss += loss.item()
 
             # Calculate accuracy
-            predicted = model.predict(inputs)
+            predicted = model.predict(inputs).reshape(-1)
             correct_count += (predicted == labels).sum().item()
             total_count += labels.size(0)
 
@@ -469,13 +471,9 @@ def get_predictions_for_data(model, data_iter):
     with torch.no_grad():
         for inputs, _ in data_iter:  # TODO check if good
             # Forward pass
-            outputs = model(inputs)
-
-            # Get predictions (assuming the model returns class probabilities)
-            _, predicted = torch.max(outputs, 1)
-
+            outputs = model.predict(inputs)
             # Convert to numpy array and accumulate
-            all_predictions.extend(predicted.numpy())
+            all_predictions.extend(outputs.numpy())
 
     # Convert the accumulated predictions to a numpy array
     all_predictions = np.array(all_predictions)
@@ -484,7 +482,12 @@ def get_predictions_for_data(model, data_iter):
 
 
 def train_model(
-    model, data_manager: DataManager, n_epochs, lr, weight_decay=0.0, device="cpu"
+    model,
+    data_manager: DataManager,
+    n_epochs,
+    lr,
+    weight_decay=0.01,
+    device="cpu",
 ) -> pd.DataFrame:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
@@ -499,7 +502,7 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Define the loss criterion
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
 
     run_data = pd.DataFrame(
         {
@@ -528,13 +531,15 @@ def train_model(
         duration_time = time.time() - start_time
 
         print(
-            f"Epoch {epoch + 1}/{n_epochs}: Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, duration_time:{duration_time:.1f}"
+            f"Epoch {epoch + 1}/{n_epochs}: Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, duration_time:{duration_time:.1f}"
         )
 
     return run_data
 
 
-def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.DataFrame:
+def train_log_linear_with_one_hot(
+    device="cpu", use_sub_phrases=True
+) -> Tuple[pd.DataFrame, LogLinear]:
     """
     Here comes your code for training and evaluation of the log linear model with one hot representation.
     """
@@ -562,8 +567,20 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     train_record_data = train_model(
         model, data_manager, n_epochs, lr, weight_decay, device=device
     )
-
-    return train_record_data
+    test_loss, test_acc = evaluate(
+        model,
+        data_manager.get_torch_iterator(TEST),
+        torch.nn.CrossEntropyLoss(),
+    )
+    print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
+    # TODO: get nehated words, and rare words
+    all_predict = get_predictions_for_data(model, data_manager.get_torch_iterator(TEST))
+    ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
+    ind_rare_words = DL.get_rare_words_examples(
+        data_manager.sentences[TEST], data_manager.sentiment_dataset
+    )
+    acc_rare_words_ind = 0
+    return train_record_data, model
 
 
 def train_log_linear_with_w2v():
@@ -582,9 +599,10 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
-    device: Literal['cuda', 'cpu'] = "cuda" if torch.cuda.is_available() else "cpu"
-    record_data = train_log_linear_with_one_hot(device, use_sub_phrases=False)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    record_data, model = train_log_linear_with_one_hot(device)
     record_data.to_csv("record_data.csv")
+    # TODO The accuracy over each of the special subsets we've mentioned in section 1
 
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
