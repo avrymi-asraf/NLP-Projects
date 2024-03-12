@@ -43,11 +43,13 @@ def get_available_device():
     """
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def get_datetime()->str:
+
+def get_datetime() -> str:
     from datetime import datetime as d
+
     now = d.now()
-    return f'{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}'
-    
+    return f"{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}"
+
 
 def save_pickle(obj, path):
     with open(path, "wb") as f:
@@ -538,7 +540,12 @@ def train_model(
         print(
             f"Epoch {epoch + 1}/{n_epochs}: Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, duration_time:{duration_time:.1f}"
         )
-
+    save_model(
+        model,
+        f"{type(model).__name__}{get_datetime()}.model",
+        optimizer=optimizer,
+        epoch=n_epochs,
+    )
     return run_data
 
 
@@ -594,6 +601,7 @@ def train_log_linear_with_one_hot(
     print(
         f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
     )
+
     return train_record_data, model
 
 
@@ -617,8 +625,6 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     record_data, model = train_log_linear_with_one_hot(device)
     record_data.to_csv("record_data.csv")
-    torch.save(model,f'{type(model).__name__}{get_datetime()}')
-    # TODO The accuracy over each of the special subsets we've mentioned in section 1
 
     # train_log_linear_with_w2v()
     # train_lstm_with_w2v()
