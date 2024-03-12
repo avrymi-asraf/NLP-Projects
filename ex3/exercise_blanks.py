@@ -43,6 +43,11 @@ def get_available_device():
     """
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+def get_datetime()->str:
+    from datetime import datetime as d
+    now = d.now()
+    return f'{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}'
+    
 
 def save_pickle(obj, path):
     with open(path, "wb") as f:
@@ -471,7 +476,7 @@ def get_predictions_for_data(model, data_iter):
     with torch.no_grad():
         for inputs, _ in data_iter:  # TODO check if good
             # Forward pass
-            outputs = model.predict(inputs)
+            outputs = model.predict(inputs.to(torch.float64))
             # Convert to numpy array and accumulate
             all_predictions.extend(outputs.numpy())
 
@@ -558,7 +563,7 @@ def train_log_linear_with_one_hot(
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
-    n_epochs = 20
+    n_epochs = 3
     lr = 0.01
     weight_decay = 0.001
 
@@ -574,12 +579,21 @@ def train_log_linear_with_one_hot(
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
     # TODO: get nehated words, and rare words
-    all_predict = get_predictions_for_data(model, data_manager.get_torch_iterator(TEST))
+    all_predict = get_predictions_for_data(
+        model, data_manager.get_torch_iterator(TEST)
+    ).reshape(-1)
+    all_true_value = data_manager.get_labels(TEST)
     ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
     ind_rare_words = DL.get_rare_words_examples(
         data_manager.sentences[TEST], data_manager.sentiment_dataset
     )
-    acc_rare_words_ind = 0
+    acc_rare_words = binary_accuracy(
+        all_predict[ind_rare_words], all_true_value[ind_rare_words]
+    )
+    acc_negated = binary_accuracy(all_predict[ind_negated], all_true_value[ind_negated])
+    print(
+        f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
+    )
     return train_record_data, model
 
 
@@ -599,9 +613,11 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     record_data, model = train_log_linear_with_one_hot(device)
     record_data.to_csv("record_data.csv")
+    torch.save(model,f'{type(model).__name__}{get_datetime()}')
     # TODO The accuracy over each of the special subsets we've mentioned in section 1
 
     # train_log_linear_with_w2v()
