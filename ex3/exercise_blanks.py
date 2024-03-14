@@ -128,7 +128,7 @@ def create_or_load_slim_w2v(words_list, cache_w2v=False):
 
 
 def get_w2v_average(
-    sent: DL.Sentence, word_to_vec: Dict[str, np.ndarray], embedding_dim: int
+        sent: DL.Sentence, word_to_vec: Dict[str, np.ndarray], embedding_dim: int
 ) -> torch.Tensor:
     """
     This method gets a sentence and returns the average word embedding of the words consisting
@@ -138,8 +138,9 @@ def get_w2v_average(
     :param embedding_dim: the dimension of the word embedding vectors
     :return The average embedding vector as numpy ndarray.
     """
-    #return zeoros + mean to avoid empty tensor
-    return torch.zeros(300) + (
+    # return zeros + mean to avoid empty tensor
+
+    average_w2v = (
         torch.tensor(
             np.array(
                 list(word_to_vec[w] for w in sent.text if w in word_to_vec),
@@ -148,6 +149,11 @@ def get_w2v_average(
         .mean(dim=0)
         .to(torch.float64)
     )
+
+    if torch.isnan(average_w2v).any():
+        return torch.zeros(300)
+    else:
+        return average_w2v
 
 
 def get_one_hot(size, ind):
@@ -237,12 +243,12 @@ class DataManager:
     """
 
     def __init__(
-        self,
-        data_type=ONEHOT_AVERAGE,
-        use_sub_phrases=True,
-        dataset_path="stanfordSentimentTreebank",
-        batch_size=50,
-        embedding_dim=None,
+            self,
+            data_type=ONEHOT_AVERAGE,
+            use_sub_phrases=True,
+            dataset_path="stanfordSentimentTreebank",
+            batch_size=50,
+            embedding_dim=None,
     ):
         """
         builds the data manager used for training and evaluation.
@@ -368,7 +374,7 @@ class LogLinear(nn.Module):
             # Apply softmax to get probabilities
             out = torch.sigmoid(out)
             # Get predicted class (0 for negative, 1 for positive)
-            predicted_classes = (out < 0.5).to(
+            predicted_classes = (out > 0.5).to(
                 torch.long
             )  # TODO what we do with values between 0.4 - 0.6
         return predicted_classes
@@ -390,7 +396,7 @@ def binary_accuracy(preds, y):
 
 
 def train_epoch(
-    model, data_iterator, optimizer, criterion, device="cpu"
+        model, data_iterator, optimizer, criterion, device="cpu"
 ) -> Tuple[float, float]:
     """
     This method operates one epoch (pass over the whole train set) of training of the given model,
@@ -500,12 +506,12 @@ def get_predictions_for_data(model, data_iter):
 
 
 def train_model(
-    model,
-    data_manager: DataManager,
-    n_epochs,
-    lr,
-    weight_decay=0.01,
-    device="cpu",
+        model,
+        data_manager: DataManager,
+        n_epochs,
+        lr,
+        weight_decay=0.01,
+        device="cpu",
 ) -> pd.DataFrame:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
@@ -520,7 +526,7 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Define the loss criterion
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
 
     run_data = pd.DataFrame(
         {
@@ -571,7 +577,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=ONEHOT_AVERAGE,
-        dataset_path="ex3\\stanfordSentimentTreebank",
+        dataset_path="stanfordSentimentTreebank",
         use_sub_phrases=use_sub_phrases,
     )  # Initialize with your DataManager object
 
@@ -591,9 +597,9 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     test_loss, test_acc = evaluate(
         model,
         data_manager.get_torch_iterator(TEST),
-        torch.nn.CrossEntropyLoss(),
+        torch.nn.BCEWithLogitsLoss(),
     )
-    print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
+    print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
     # TODO: get nehated words, and rare words
     all_predict = get_predictions_for_data(
         model, data_manager.get_torch_iterator(TEST)
@@ -627,7 +633,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=W2V_AVERAGE,
-        dataset_path="ex3\\stanfordSentimentTreebank",
+        dataset_path="stanfordSentimentTreebank",
     )  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
@@ -646,7 +652,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     test_loss, test_acc = evaluate(
         model,
         data_manager.get_torch_iterator(TEST),
-        torch.nn.CrossEntropyLoss(),
+        torch.nn.BCEWithLogitsLoss(),
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
@@ -677,7 +683,6 @@ def train_lstm_with_w2v():
 
 
 if __name__ == "__main__":
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # record_data = train_log_linear_with_one_hot(device)
