@@ -198,7 +198,7 @@ def get_word_to_ind(words_list):
     return {word: i for i, word in enumerate(word_set)}
 
 
-def sentence_to_embedding(sent, word_to_vec, seq_len, embedding_dim=300):
+def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
     """
     this method gets a sentence and a word to vector mapping, and returns a list containing the
     words embeddings of the tokens in the sentence.
@@ -208,7 +208,26 @@ def sentence_to_embedding(sent, word_to_vec, seq_len, embedding_dim=300):
     :param embedding_dim: the dimension of the w2v embedding
     :return: numpy ndarray of shape (seq_len, embedding_dim) with the representation of the sentence
     """
-    return
+
+    words = sent.text.split()  # Tokenize the sentence
+    embeddings = []
+    for word in words:
+        if word in word_to_vec:
+            embeddings.append(word_to_vec[word])
+        else:
+            # Handle out-of-vocabulary words (e.g., use a special token representation or skip)
+            # For demonstration purposes, we'll use a zero vector
+            embeddings.append(np.zeros(embedding_dim))
+
+    # Pad or truncate the embeddings to match the desired sequence length
+    if len(embeddings) < seq_len:
+        # Pad with zero vectors if the sequence is shorter than seq_len
+        embeddings.extend([np.zeros(embedding_dim)] * (seq_len - len(embeddings)))
+    elif len(embeddings) > seq_len:
+        # Truncate if the sequence is longer than seq_len
+        embeddings = embeddings[:seq_len]
+
+    return np.array(embeddings)
 
 
 class OnlineDataset(Dataset):
@@ -675,10 +694,12 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     return train_record_data
 
 
-def train_lstm_with_w2v():
+def train_lstm_with_w2v(device="cpu"):
     """
     Here comes your code for training and evaluation of the LSTM model.
     """
+
+
     return
 
 
@@ -688,6 +709,6 @@ if __name__ == "__main__":
     # record_data = train_log_linear_with_one_hot(device)
     # record_data.to_csv("record_data_one_hot.csv")
 
-    record_data = train_log_linear_with_w2v()
-    record_data.to_csv("record_data_one_hot.csv")
-    # train_lstm_with_w2v()
+    # record_data = train_log_linear_with_w2v()
+    # record_data.to_csv("record_data_one_hot.csv")
+    record_data = train_lstm_with_w2v()
