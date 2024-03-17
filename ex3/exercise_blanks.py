@@ -128,7 +128,7 @@ def create_or_load_slim_w2v(words_list, cache_w2v=False):
 
 
 def get_w2v_average(
-        sent: DL.Sentence, word_to_vec: Dict[str, np.ndarray], embedding_dim: int
+    sent: DL.Sentence, word_to_vec: Dict[str, np.ndarray], embedding_dim: int
 ) -> torch.Tensor:
     """
     This method gets a sentence and returns the average word embedding of the words consisting
@@ -227,7 +227,7 @@ def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
         # Truncate if the sequence is longer than seq_len
         embeddings = embeddings[:seq_len]
 
-    return np.array(embeddings)
+    return torch.tensor(embeddings)
 
 
 class OnlineDataset(Dataset):
@@ -262,12 +262,12 @@ class DataManager:
     """
 
     def __init__(
-            self,
-            data_type=ONEHOT_AVERAGE,
-            use_sub_phrases=True,
-            dataset_path="stanfordSentimentTreebank",
-            batch_size=50,
-            embedding_dim=None,
+        self,
+        data_type=ONEHOT_AVERAGE,
+        use_sub_phrases=True,
+        dataset_path="stanfordSentimentTreebank",
+        batch_size=50,
+        embedding_dim=None,
     ):
         """
         builds the data manager used for training and evaluation.
@@ -415,7 +415,7 @@ def binary_accuracy(preds, y):
 
 
 def train_epoch(
-        model, data_iterator, optimizer, criterion, device="cpu"
+    model, data_iterator, optimizer, criterion, device="cpu"
 ) -> Tuple[float, float]:
     """
     This method operates one epoch (pass over the whole train set) of training of the given model,
@@ -525,12 +525,12 @@ def get_predictions_for_data(model, data_iter):
 
 
 def train_model(
-        model,
-        data_manager: DataManager,
-        n_epochs,
-        lr,
-        weight_decay=0.01,
-        device="cpu",
+    model,
+    data_manager: DataManager,
+    n_epochs,
+    lr,
+    weight_decay=0.01,
+    device="cpu",
 ) -> pd.DataFrame:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
@@ -619,7 +619,6 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
         torch.nn.BCEWithLogitsLoss(),
     )
     print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
-    # TODO: get nehated words, and rare words
     all_predict = get_predictions_for_data(
         model, data_manager.get_torch_iterator(TEST)
     ).reshape(-1)
@@ -699,16 +698,18 @@ def train_lstm_with_w2v(device="cpu"):
     Here comes your code for training and evaluation of the LSTM model.
     """
 
-
     return
 
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    # print("run Log linear with one hot")
     # record_data = train_log_linear_with_one_hot(device)
     # record_data.to_csv("record_data_one_hot.csv")
 
-    # record_data = train_log_linear_with_w2v()
+    # print("run Log linear with w2v")
+    # record_data = train_log_linear_with_w2v(device)
     # record_data.to_csv("record_data_one_hot.csv")
+
+    print("run Log lstm with w2v")
     record_data = train_lstm_with_w2v()
