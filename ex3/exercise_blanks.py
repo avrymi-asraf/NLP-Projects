@@ -645,6 +645,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
+        device=device
     )
     print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
     all_predict = get_predictions_for_data(
@@ -699,6 +700,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
+        device=device
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
@@ -750,7 +752,7 @@ def train_lstm_with_w2v(device="cpu"):
     )
 
     # Set hyperparameters
-    n_epochs = 20
+    n_epochs = 2
     lr = 0.01
     weight_decay = 0.001
 
@@ -763,6 +765,7 @@ def train_lstm_with_w2v(device="cpu"):
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
+        device=device
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
