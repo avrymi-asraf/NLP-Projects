@@ -526,7 +526,7 @@ def evaluate(model, data_iterator, criterion, device="cpu"):
     return average_loss, average_accuracy
 
 
-def get_predictions_for_data(model, data_iter):
+def get_predictions_for_data(model, data_iter,device):
     """
 
     This function should iterate over all batches of examples from data_iter and return all of the models
@@ -542,6 +542,7 @@ def get_predictions_for_data(model, data_iter):
     with torch.no_grad():
         for inputs, _ in data_iter:  # TODO check if good
             # Forward pass
+            inputs = inputs.to(device)
             outputs = model.predict(inputs.to(torch.float64))
             # Convert to numpy array and accumulate
             all_predictions.extend(outputs.numpy())
