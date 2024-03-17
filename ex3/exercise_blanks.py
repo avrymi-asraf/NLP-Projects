@@ -372,7 +372,7 @@ class LSTM(nn.Module):
             num_layers=n_layers,
             dropout=dropout,
             bidirectional=True,
-            batch_first=True
+            batch_first=True,
         )
         self.ff = nn.Linear(in_features=hidden_dim * 2, out_features=1)
         self.len_sentence = len_sentence
@@ -383,7 +383,7 @@ class LSTM(nn.Module):
         :param text: tensor (L,N,E) when L is len of sentence, N is number of exampels, and E is size of embedding_dim
         """
         out, (hs, cs) = self.lstm_c(text)
-        out = self.ff(out[:,self.len_sentence - 1])
+        out = self.ff(out[:, self.len_sentence - 1])
         # out = torch.sigmoid(out)
         return out
 
@@ -462,7 +462,7 @@ def train_epoch(
     total_count = 0
 
     # Iterate over the data
-    for inputs, labels in tqdm.tqdm(data_iterator):
+    for inputs, labels in tqdm.tqdm(data_iterator, leave=False):
         inputs, labels = inputs.to(device), labels.to(device)
         # Zero the gradients
         optimizer.zero_grad()
@@ -480,7 +480,7 @@ def train_epoch(
         predicted = model.predict(inputs).reshape(-1)
         correct_count += (predicted == labels).sum().item()
         total_count += labels.size(0)
-
+    # tqdm_iterator.clear()
     # Calculate accuracy and loss for the epoch
     epoch_loss = total_loss / len(data_iterator)
     epoch_accuracy = correct_count / total_count
@@ -645,7 +645,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
-        device=device
+        device=device,
     )
     print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
     all_predict = get_predictions_for_data(
@@ -700,7 +700,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
-        device=device
+        device=device,
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
@@ -765,7 +765,7 @@ def train_lstm_with_w2v(device="cpu"):
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
-        device=device
+        device=device,
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
@@ -794,9 +794,9 @@ if __name__ == "__main__":
     # record_data = train_log_linear_with_one_hot(device)
     # record_data.to_csv("record_data_one_hot.csv")
 
-    # print("run Log linear with w2v")
-    # record_data = train_log_linear_with_w2v(device)
-    # record_data.to_csv("record_data_one_hot.csv")
+    print("run Log linear with w2v")
+    record_data = train_log_linear_with_w2v(device)
+    record_data.to_csv("record_data_one_hot.csv")
 
-    print("lstm with w2v")
-    record_data = train_lstm_with_w2v(device)
+    # print("lstm with w2v")
+    # record_data = train_lstm_with_w2v(device)
