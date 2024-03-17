@@ -198,7 +198,9 @@ def get_word_to_ind(words_list):
     return {word: i for i, word in enumerate(word_set)}
 
 
-def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
+def sentence_to_embedding(
+    sent, word_to_vec: Dict[str, np.ndarray], seq_len=52, embedding_dim=300
+):
     """
     this method gets a sentence and a word to vector mapping, and returns a list containing the
     words embeddings of the tokens in the sentence.
@@ -209,7 +211,7 @@ def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
     :return: numpy ndarray of shape (seq_len, embedding_dim) with the representation of the sentence
     """
 
-    words = sent.text.split()  # Tokenize the sentence
+    words = sent.text  # Tokenize the sentence
     embeddings = []
     for word in words:
         if word in word_to_vec:
@@ -227,7 +229,7 @@ def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
         # Truncate if the sequence is longer than seq_len
         embeddings = embeddings[:seq_len]
 
-    return torch.tensor(embeddings)
+    return np.array(embeddings)
 
 
 class OnlineDataset(Dataset):
@@ -344,7 +346,7 @@ class DataManager:
         """
         :return: the shape of a single example from this dataset (only of x, ignoring y the label).
         """
-        return self.torch_datasets[TRAIN][0][0].shape[0]
+        return self.torch_datasets[TRAIN][0][0].shape[-1]
 
 
 # ------------------------------------ Models ----------------------------------------------------
@@ -355,14 +357,40 @@ class LSTM(nn.Module):
     An LSTM for sentiment analysis with architecture as described in the exercise description.
     """
 
-    def __init__(self, embedding_dim, hidden_dim, n_layers, dropout):
-        return
+    def __init__(
+        self,
+        embedding_dim: int,
+        hidden_dim: int,
+        n_layers: int,
+        dropout: float,
+        len_sentence: int = 52,
+    ):
+        super(LSTM, self).__init__()
+        self.lstm_c = nn.LSTM(
+            input_size=embedding_dim,
+            hidden_size=hidden_dim,
+            num_layers=n_layers,
+            dropout=dropout,
+            bidirectional=True,
+            batch_first=True
+        )
+        self.ff = nn.Linear(in_features=hidden_dim * 2, out_features=1)
+        self.len_sentence = len_sentence
 
-    def forward(self, text):
-        return
+    def forward(self, text: torch.Tensor) -> torch.Tensor:
+        """
+        forward text to lstm,
+        :param text: tensor (L,N,E) when L is len of sentence, N is number of exampels, and E is size of embedding_dim
+        """
+        out, (hs, cs) = self.lstm_c(text)
+        out = self.ff(out[:,self.len_sentence - 1])
+        # out = torch.sigmoid(out)
+        return out
 
     def predict(self, text):
-        return
+        out = self.forward(text)
+        out = (out > 0.5).to(torch.int)
+        return out
 
 
 class LogLinear(nn.Module):
@@ -596,7 +624,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=ONEHOT_AVERAGE,
-        dataset_path="stanfordSentimentTreebank",
+        dataset_path="ex3\\stanfordSentimentTreebank",
         use_sub_phrases=use_sub_phrases,
     )  # Initialize with your DataManager object
 
@@ -604,7 +632,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
-    n_epochs = 3
+    n_epochs = 2
     lr = 0.01
     weight_decay = 0.001
 
@@ -651,14 +679,14 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=W2V_AVERAGE,
-        dataset_path="stanfordSentimentTreebank",
+        dataset_path="ex3\\stanfordSentimentTreebank",
     )  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
-    n_epochs = 20
+    n_epochs = 2
     lr = 0.01
     weight_decay = 0.001
 
@@ -698,7 +726,63 @@ def train_lstm_with_w2v(device="cpu"):
     Here comes your code for training and evaluation of the LSTM model.
     """
 
-    return
+    # Set batch size
+    batch_size = 64
+
+    # Create DataManager object
+    data_manager = DataManager(
+        embedding_dim=300,
+        batch_size=batch_size,
+        data_type=W2V_SEQUENCE,
+        dataset_path="ex3\\stanfordSentimentTreebank",
+    )  # Initialize with your DataManager object
+
+    # Initialize your log linear model with one-hot representation
+    model = (
+        LSTM(
+            embedding_dim=data_manager.get_input_shape(),
+            hidden_dim=100,
+            n_layers=2,
+            dropout=0.3,
+        )
+        .to(torch.float64)
+        .to(device)
+    )
+
+    # Set hyperparameters
+    n_epochs = 20
+    lr = 0.01
+    weight_decay = 0.001
+
+    # Create data iterators with the specified batch size
+    # Train the model
+    train_record_data = train_model(
+        model, data_manager, n_epochs, lr, weight_decay, device=device
+    )
+    test_loss, test_acc = evaluate(
+        model,
+        data_manager.get_torch_iterator(TEST),
+        torch.nn.BCEWithLogitsLoss(),
+    )
+    print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
+
+    all_predict = get_predictions_for_data(
+        model, data_manager.get_torch_iterator(TEST)
+    ).reshape(-1)
+    all_true_value = data_manager.get_labels(TEST)
+    ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
+    ind_rare_words = DL.get_rare_words_examples(
+        data_manager.sentences[TEST], data_manager.sentiment_dataset
+    )
+    acc_rare_words = binary_accuracy(
+        all_predict[ind_rare_words], all_true_value[ind_rare_words]
+    )
+    acc_negated = binary_accuracy(all_predict[ind_negated], all_true_value[ind_negated])
+    print(
+        f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
+    )
+
+    return train_record_data
 
 
 if __name__ == "__main__":
@@ -711,5 +795,5 @@ if __name__ == "__main__":
     # record_data = train_log_linear_with_w2v(device)
     # record_data.to_csv("record_data_one_hot.csv")
 
-    print("run Log lstm with w2v")
-    record_data = train_lstm_with_w2v()
+    print("lstm with w2v")
+    record_data = train_lstm_with_w2v(device)
