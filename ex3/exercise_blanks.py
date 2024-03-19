@@ -15,6 +15,7 @@ import time
 import pandas as pd
 import plotly
 import sys
+import matplotlib.pyplot as plt
 
 # ------------------------------------------- Constants ----------------------------------------
 
@@ -198,7 +199,9 @@ def get_word_to_ind(words_list):
     return {word: i for i, word in enumerate(word_set)}
 
 
-def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
+def sentence_to_embedding(
+        sent, word_to_vec: Dict[str, np.ndarray], seq_len=52, embedding_dim=300
+):
     """
     this method gets a sentence and a word to vector mapping, and returns a list containing the
     words embeddings of the tokens in the sentence.
@@ -209,7 +212,7 @@ def sentence_to_embedding(sent, word_to_vec, seq_len=52, embedding_dim=300):
     :return: numpy ndarray of shape (seq_len, embedding_dim) with the representation of the sentence
     """
 
-    words = sent.text.split()  # Tokenize the sentence
+    words = sent.text  # Tokenize the sentence
     embeddings = []
     for word in words:
         if word in word_to_vec:
@@ -344,7 +347,7 @@ class DataManager:
         """
         :return: the shape of a single example from this dataset (only of x, ignoring y the label).
         """
-        return self.torch_datasets[TRAIN][0][0].shape[0]
+        return self.torch_datasets[TRAIN][0][0].shape[-1]
 
 
 # ------------------------------------ Models ----------------------------------------------------
@@ -355,14 +358,52 @@ class LSTM(nn.Module):
     An LSTM for sentiment analysis with architecture as described in the exercise description.
     """
 
-    def __init__(self, embedding_dim, hidden_dim, n_layers, dropout):
-        return
+    def __init__(
+            self,
+            embedding_dim: int,
+            hidden_dim: int,
+            n_layers: int,
+            dropout: float,
+            len_sentence: int,
+    ):
+        super(LSTM, self).__init__()
+        self.lstm = nn.LSTM(
+            input_size=embedding_dim,
+            hidden_size=hidden_dim,
+            num_layers=n_layers,
+            # dropout=dropout,
+            bidirectional=True,
+            batch_first=True,
+        )
+        self.hidden_size = hidden_dim
+        self.len_sentence = len_sentence
+        self.num_layers = n_layers
+        self.fc = nn.Linear(hidden_dim * 2, 1)  # fully connected 1
 
-    def forward(self, text):
-        return
+    def forward(self, text: torch.Tensor) -> torch.Tensor:
+        """
+        forward text to lstm,
+        :param text: tensor (L,N,E) when L is len of sentence, N is number of exampels, and E is size of embedding_dim
+        """
+
+        h0 = torch.zeros(self.num_layers * 2, text.size(0), self.hidden_size, dtype=torch.float64).to(device)
+
+        c0 = torch.zeros(self.num_layers * 2, text.size(0), self.hidden_size, dtype=torch.float64).to(device)
+        out_lstm, (h_n, c_n) = self.lstm(text, (h0, c0))  # lstm with input, hidden, and internal state
+        hn_1 = h_n[0, :, :]
+        hn_2 = h_n[1, :, :]
+        concatenated_tensor = torch.cat((hn_1, hn_2), dim=1)
+        temp = out_lstm[:, -1, :]
+        out_linear1 = self.fc(temp)
+        out_linear = self.fc(concatenated_tensor)
+
+        out = torch.sigmoid(out_linear)
+        return out
 
     def predict(self, text):
-        return
+        out = self.forward(text)
+        out = (out > 0.5).to(torch.int)
+        return out
 
 
 class LogLinear(nn.Module):
@@ -434,8 +475,10 @@ def train_epoch(
     total_count = 0
 
     # Iterate over the data
-    for inputs, labels in tqdm.tqdm(data_iterator):
+    for inputs, labels in tqdm.tqdm(data_iterator, leave=False):
         inputs, labels = inputs.to(device), labels.to(device)
+        # inputs = inputs.to(torch.float32)
+
         # Zero the gradients
         optimizer.zero_grad()
         # Forward pass
@@ -452,7 +495,7 @@ def train_epoch(
         predicted = model.predict(inputs).reshape(-1)
         correct_count += (predicted == labels).sum().item()
         total_count += labels.size(0)
-
+    # tqdm_iterator.clear()
     # Calculate accuracy and loss for the epoch
     epoch_loss = total_loss / len(data_iterator)
     epoch_accuracy = correct_count / total_count
@@ -498,12 +541,13 @@ def evaluate(model, data_iterator, criterion, device="cpu"):
     return average_loss, average_accuracy
 
 
-def get_predictions_for_data(model, data_iter):
+def get_predictions_for_data(model, data_iter, device="cpu"):
     """
 
     This function should iterate over all batches of examples from data_iter and return all of the models
     predictions as a numpy ndarray or torch tensor (or list if you prefer). the prediction should be in the
     same order of the examples returned by data_iter.
+    :param device:
     :param model: one of the models you implemented in the exercise
     :param data_iter: torch iterator as given by the DataManager
     :return:
@@ -514,6 +558,7 @@ def get_predictions_for_data(model, data_iter):
     with torch.no_grad():
         for inputs, _ in data_iter:  # TODO check if good
             # Forward pass
+            inputs = inputs.to(device)
             outputs = model.predict(inputs.to(torch.float64))
             # Convert to numpy array and accumulate
             all_predictions.extend(outputs.numpy())
@@ -557,6 +602,13 @@ def train_model(
         index=range(n_epochs),
     )
 
+    # val_loss, val_acc = evaluate(
+    #    model, data_manager.get_torch_iterator(VAL), criterion, device=device
+    # )
+
+    # print(
+    #    f"Epoch {0}/{2}: Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
+    # )
     for epoch in range(n_epochs):
         # Training
         start_time = time.time()
@@ -596,7 +648,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=ONEHOT_AVERAGE,
-        dataset_path="stanfordSentimentTreebank",
+        dataset_path="ex3\\stanfordSentimentTreebank",
         use_sub_phrases=use_sub_phrases,
     )  # Initialize with your DataManager object
 
@@ -604,7 +656,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
-    n_epochs = 3
+    n_epochs = 2
     lr = 0.01
     weight_decay = 0.001
 
@@ -617,9 +669,9 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
+        device=device,
     )
     print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
-    # TODO: get nehated words, and rare words
     all_predict = get_predictions_for_data(
         model, data_manager.get_torch_iterator(TEST)
     ).reshape(-1)
@@ -659,7 +711,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
     # Set hyperparameters
-    n_epochs = 20
+    n_epochs = 15
     lr = 0.01
     weight_decay = 0.001
 
@@ -672,6 +724,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
         model,
         data_manager.get_torch_iterator(TEST),
         torch.nn.BCEWithLogitsLoss(),
+        device=device,
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
@@ -699,16 +752,102 @@ def train_lstm_with_w2v(device="cpu"):
     Here comes your code for training and evaluation of the LSTM model.
     """
 
+    # Set batch size
+    batch_size = 64
 
-    return
+    # Create DataManager object
+    data_manager = DataManager(
+        embedding_dim=300,
+        batch_size=batch_size,
+        data_type=W2V_SEQUENCE,
+        dataset_path="stanfordSentimentTreebank",
+    )  # Initialize with your DataManager object
+
+    # Initialize your log linear model with one-hot representation
+    model = (
+        LSTM(
+            embedding_dim=data_manager.get_input_shape(),
+            hidden_dim=100,
+            n_layers=1,
+            dropout=0.3,
+            len_sentence=52
+        )
+        .to(torch.float64)
+        .to(device)
+    )
+
+    # Set hyperparameters
+    n_epochs = 2
+    lr = 0.01
+    weight_decay = 0.001
+
+    # Create data iterators with the specified batch size
+    # Train the model
+    train_record_data = train_model(
+        model, data_manager, n_epochs, lr, weight_decay, device=device
+    )
+    test_loss, test_acc = evaluate(
+        model,
+        data_manager.get_torch_iterator(TEST),
+        torch.nn.BCEWithLogitsLoss(),
+        device=device,
+    )
+    print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
+
+    all_predict = get_predictions_for_data(
+        model, data_manager.get_torch_iterator(TEST)
+    ).reshape(-1)
+    all_true_value = data_manager.get_labels(TEST)
+    ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
+    ind_rare_words = DL.get_rare_words_examples(
+        data_manager.sentences[TEST], data_manager.sentiment_dataset
+    )
+    acc_rare_words = binary_accuracy(
+        all_predict[ind_rare_words], all_true_value[ind_rare_words]
+    )
+    acc_negated = binary_accuracy(all_predict[ind_negated], all_true_value[ind_negated])
+    print(
+        f"Accuracy rare words: {acc_rare_words:.3f}, Accuracy negated sentence: {acc_negated:.3f}"
+    )
+
+    return train_record_data
+
+
+def make_graph(run_data):
+    # Plot train_loss and val_loss
+    plt.figure(figsize=(10, 5))
+    plt.plot(run_data.index, run_data['train_loss'], label='Train Loss')
+    plt.plot(run_data.index, run_data['val_loss'], label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    # Plot train_acc and val_acc
+    plt.figure(figsize=(10, 5))
+    plt.plot(run_data.index, run_data['train_acc'], label='Train Accuracy')
+    plt.plot(run_data.index, run_data['val_acc'], label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    # print("run Log linear with one hot")
+    # record_data_log_linear = train_log_linear_with_one_hot(device)
+    # record_data_log_linear.to_csv("record_data_one_hot.csv")
 
-    # record_data = train_log_linear_with_one_hot(device)
-    # record_data.to_csv("record_data_one_hot.csv")
-
-    # record_data = train_log_linear_with_w2v()
-    # record_data.to_csv("record_data_one_hot.csv")
-    record_data = train_lstm_with_w2v()
+    print("run Log linear with w2v")
+    record_data_w2v_average = train_log_linear_with_w2v(device)
+    record_data_w2v_average.to_csv("record_data_w2v.csv")
+    make_graph(record_data_w2v_average)
+    pass
+    # print("lstm with w2v")
+    # record_data_lstm = train_lstm_with_w2v(device)
+    # record_data_lstm.to_csv("record_data_lstm.csv")
