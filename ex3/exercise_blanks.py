@@ -383,12 +383,12 @@ class LSTM(nn.Module):
         :param text: tensor (L,N,E) when L is len of sentence, N is number of exampels, and E is size of embedding_dim
         """
         out, (hs, cs) = self.lstm_c(text)
-        out = self.ff(out[:, self.len_sentence - 1])
+        out = self.ff(out[:, -1])
         # out = torch.sigmoid(out)
         return out
 
     def predict(self, text):
-        out = self.forward(text)
+        out = torch.sigmoid(self.forward(text))
         out = (out > 0.5).to(torch.int)
         return out
 
@@ -526,7 +526,7 @@ def evaluate(model, data_iterator, criterion, device="cpu"):
     return average_loss, average_accuracy
 
 
-def get_predictions_for_data(model, data_iter,device):
+def get_predictions_for_data(model, data_iter, device='cpu'):
     """
 
     This function should iterate over all batches of examples from data_iter and return all of the models
@@ -545,7 +545,7 @@ def get_predictions_for_data(model, data_iter,device):
             inputs = inputs.to(device)
             outputs = model.predict(inputs.to(torch.float64))
             # Convert to numpy array and accumulate
-            all_predictions.extend(outputs.numpy())
+            all_predictions.extend(outputs.cpu().numpy())
 
     # Convert the accumulated predictions to a numpy array
     all_predictions = np.array(all_predictions)
@@ -588,6 +588,7 @@ def train_model(
 
     for epoch in range(n_epochs):
         # Training
+        
         start_time = time.time()
         train_loss, train_acc = train_epoch(
             model,
@@ -706,7 +707,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
 
     all_predict = get_predictions_for_data(
-        model, data_manager.get_torch_iterator(TEST)
+        model, data_manager.get_torch_iterator(TEST), device=device
     ).reshape(-1)
     all_true_value = data_manager.get_labels(TEST)
     ind_negated = DL.get_negated_polarity_examples(data_manager.sentences[TEST])
@@ -795,9 +796,9 @@ if __name__ == "__main__":
     # record_data = train_log_linear_with_one_hot(device)
     # record_data.to_csv("record_data_one_hot.csv")
 
-    print("run Log linear with w2v")
-    record_data = train_log_linear_with_w2v(device)
-    record_data.to_csv("record_data_one_hot.csv")
+    # print("run Log linear with w2v")
+    # record_data = train_log_linear_with_w2v(device)
+    # record_data.to_csv("record_data_one_hot.csv")
 
-    # print("lstm with w2v")
-    # record_data = train_lstm_with_w2v(device)
+    print("lstm with w2v")
+    record_data = train_lstm_with_w2v(device)
