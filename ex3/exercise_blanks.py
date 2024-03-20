@@ -393,8 +393,8 @@ class LSTM(nn.Module):
         hn_1 = h_n[0, :, :]
         hn_2 = h_n[1, :, :]
         concatenated_tensor = torch.cat((hn_1, hn_2), dim=1)
-        temp = out_lstm[:, -1, :]
-        out_linear1 = self.fc(temp)
+        # temp = out_lstm[:, -1, :]
+        # out_linear1 = self.fc(temp)
         out_linear = self.fc(concatenated_tensor)
 
         out = torch.sigmoid(out_linear)
@@ -574,12 +574,15 @@ def train_model(
         data_manager: DataManager,
         n_epochs,
         lr,
+        criterion,
         weight_decay=0.01,
         device="cpu",
 ) -> pd.DataFrame:
     """
     Runs the full training procedure for the given model. The optimization should be done using the Adam
     optimizer with all parameters but learning rate and weight decay set to default.
+    :param device: cpu or cuda
+    :param criterion: Loss function
     :param model: module of one of the models implemented in the exercise
     :param data_manager: the DataManager object
     :param n_epochs: number of times to go over the whole training set
@@ -590,7 +593,7 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Define the loss criterion
-    criterion = torch.nn.BCEWithLogitsLoss()
+    # criterion = torch.nn.BCEWithLogitsLoss()
 
     run_data = pd.DataFrame(
         {
@@ -602,13 +605,6 @@ def train_model(
         index=range(n_epochs),
     )
 
-    # val_loss, val_acc = evaluate(
-    #    model, data_manager.get_torch_iterator(VAL), criterion, device=device
-    # )
-
-    # print(
-    #    f"Epoch {0}/{2}: Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
-    # )
     for epoch in range(n_epochs):
         # Training
         start_time = time.time()
@@ -648,27 +644,29 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
     data_manager = DataManager(
         batch_size=batch_size,
         data_type=ONEHOT_AVERAGE,
-        dataset_path="ex3\\stanfordSentimentTreebank",
+        dataset_path="stanfordSentimentTreebank",
         use_sub_phrases=use_sub_phrases,
     )  # Initialize with your DataManager object
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
 
+    criterion_one_hot = torch.nn.CrossEntropyLoss()
+
     # Set hyperparameters
-    n_epochs = 2
+    n_epochs = 20
     lr = 0.01
     weight_decay = 0.001
 
     # Create data iterators with the specified batch size
     # Train the model
     train_record_data = train_model(
-        model, data_manager, n_epochs, lr, weight_decay, device=device
+        model, data_manager, n_epochs, lr, criterion_one_hot, weight_decay, device=device
     )
     test_loss, test_acc = evaluate(
         model,
         data_manager.get_torch_iterator(TEST),
-        torch.nn.BCEWithLogitsLoss(),
+        criterion_one_hot,
         device=device,
     )
     print(f"test_loss: {test_loss:.3f}, test_acc: {test_acc:.3f}")
@@ -709,21 +707,21 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
-
+    criterion_w2v = torch.nn.BCEWithLogitsLoss()
     # Set hyperparameters
-    n_epochs = 15
+    n_epochs = 20
     lr = 0.01
     weight_decay = 0.001
 
     # Create data iterators with the specified batch size
     # Train the model
     train_record_data = train_model(
-        model, data_manager, n_epochs, lr, weight_decay, device=device
+        model, data_manager, n_epochs, lr, criterion_w2v, weight_decay, device=device
     )
     test_loss, test_acc = evaluate(
         model,
         data_manager.get_torch_iterator(TEST),
-        torch.nn.BCEWithLogitsLoss(),
+        criterion_w2v,
         device=device,
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
@@ -777,19 +775,19 @@ def train_lstm_with_w2v(device="cpu"):
     )
 
     # Set hyperparameters
-    n_epochs = 2
+    n_epochs = 20
     lr = 0.01
     weight_decay = 0.001
-
+    criterion_LSTM = torch.nn.CrossEntropyLoss()
     # Create data iterators with the specified batch size
     # Train the model
     train_record_data = train_model(
-        model, data_manager, n_epochs, lr, weight_decay, device=device
+        model, data_manager, n_epochs, lr, criterion_LSTM, weight_decay, device=device
     )
     test_loss, test_acc = evaluate(
         model,
         data_manager.get_torch_iterator(TEST),
-        torch.nn.BCEWithLogitsLoss(),
+        criterion_LSTM,
         device=device,
     )
     print(f"test_loss{test_loss:.3f}, test_acc{test_acc:.3f}")
@@ -813,41 +811,45 @@ def train_lstm_with_w2v(device="cpu"):
     return train_record_data
 
 
-def make_graph(run_data):
+def make_graph(run_data, session: str):
     # Plot train_loss and val_loss
     plt.figure(figsize=(10, 5))
-    plt.plot(run_data.index, run_data['train_loss'], label='Train Loss')
-    plt.plot(run_data.index, run_data['val_loss'], label='Validation Loss')
-    plt.title('Training and Validation Loss')
+    plt.plot(run_data.index + 1, run_data['train_loss'], label='Train Loss')
+    plt.plot(run_data.index + 1, run_data['val_loss'], label='Validation Loss')
+    plt.title('Training and Validation Loss - ' + session)
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
     plt.grid(True)
+    plt.xticks(np.arange(1, len(run_data.index) + 1, 1))
     plt.show()
 
     # Plot train_acc and val_acc
     plt.figure(figsize=(10, 5))
-    plt.plot(run_data.index, run_data['train_acc'], label='Train Accuracy')
-    plt.plot(run_data.index, run_data['val_acc'], label='Validation Accuracy')
-    plt.title('Training and Validation Accuracy')
+    plt.plot(run_data.index + 1, run_data['train_acc'], label='Train Accuracy')
+    plt.plot(run_data.index + 1, run_data['val_acc'], label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy - ' + session)
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend()
     plt.grid(True)
+    plt.xticks(np.arange(1, len(run_data.index) + 1, 1))
     plt.show()
 
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # print("run Log linear with one hot")
-    # record_data_log_linear = train_log_linear_with_one_hot(device)
-    # record_data_log_linear.to_csv("record_data_one_hot.csv")
+    print("run Log linear with one hot")
+    record_data_log_linear = train_log_linear_with_one_hot(device)
+    record_data_log_linear.to_csv("record_data_one_hot.csv")
+    make_graph(record_data_log_linear, "One Hot Vector")
 
     print("run Log linear with w2v")
     record_data_w2v_average = train_log_linear_with_w2v(device)
     record_data_w2v_average.to_csv("record_data_w2v.csv")
-    make_graph(record_data_w2v_average)
+    make_graph(record_data_w2v_average, "Word to Vector Average")
     pass
-    # print("lstm with w2v")
-    # record_data_lstm = train_lstm_with_w2v(device)
-    # record_data_lstm.to_csv("record_data_lstm.csv")
+    print("lstm with w2v")
+    record_data_lstm = train_lstm_with_w2v(device)
+    record_data_lstm.to_csv("record_data_lstm.csv")
+    make_graph(record_data_lstm, "Word to Vector LSTM")
