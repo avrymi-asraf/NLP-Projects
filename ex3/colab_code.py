@@ -651,7 +651,7 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
-    model = torch.compile(model)
+    # model = torch.compile(model)
     criterion_one_hot = torch.nn.BCEWithLogitsLoss()
 
     # Set hyperparameters
@@ -708,7 +708,7 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
-    model = torch.compile(model)
+    # model = torch.compile(model)
     criterion_w2v = torch.nn.BCEWithLogitsLoss()
     # Set hyperparameters
     n_epochs = 7
@@ -775,7 +775,7 @@ def train_lstm_with_w2v(device="cpu"):
         .to(torch.float64)
         .to(device)
     )
-    model = torch.compile(model)
+    # model = torch.compile(model)
 
     # Set hyperparameters
     n_epochs = 7
