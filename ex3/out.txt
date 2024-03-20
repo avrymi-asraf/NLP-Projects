@@ -1,0 +1,69 @@
+run Log linear with one hot
+Epoch 1/20: Val Loss: 124.4947, Val Acc: 0.7162, duration_time:100.2
+Epoch 2/20: Val Loss: 124.0557, Val Acc: 0.7006, duration_time:95.1
+Epoch 3/20: Val Loss: 123.9354, Val Acc: 0.7048, duration_time:95.6
+Epoch 4/20: Val Loss: 123.8772, Val Acc: 0.7017, duration_time:95.2
+Epoch 5/20: Val Loss: 123.8968, Val Acc: 0.6985, duration_time:96.9
+Epoch 6/20: Val Loss: 123.9308, Val Acc: 0.6892, duration_time:97.2
+Epoch 7/20: Val Loss: 123.9532, Val Acc: 0.6954, duration_time:96.4
+Epoch 8/20: Val Loss: 123.9547, Val Acc: 0.6933, duration_time:95.0
+Epoch 9/20: Val Loss: 123.9030, Val Acc: 0.6975, duration_time:94.7
+Epoch 10/20: Val Loss: 123.9076, Val Acc: 0.7017, duration_time:95.9
+Epoch 11/20: Val Loss: 123.9007, Val Acc: 0.6965, duration_time:95.1
+Epoch 12/20: Val Loss: 123.8962, Val Acc: 0.6944, duration_time:95.3
+Epoch 13/20: Val Loss: 123.8975, Val Acc: 0.7027, duration_time:95.6
+Epoch 14/20: Val Loss: 123.9208, Val Acc: 0.7048, duration_time:94.7
+Epoch 15/20: Val Loss: 123.9349, Val Acc: 0.6944, duration_time:96.1
+Epoch 16/20: Val Loss: 123.8995, Val Acc: 0.6985, duration_time:96.0
+Epoch 17/20: Val Loss: 123.9079, Val Acc: 0.6975, duration_time:95.3
+Epoch 18/20: Val Loss: 123.9023, Val Acc: 0.6965, duration_time:94.4
+Epoch 19/20: Val Loss: 123.8820, Val Acc: 0.7017, duration_time:94.9
+Epoch 20/20: Val Loss: 123.8872, Val Acc: 0.6933, duration_time:94.9
+test_loss: 123.691, test_acc: 0.703
+Accuracy rare words: 0.420, Accuracy negated sentence: 0.565
+run Log linear with w2v
+Epoch 1/20: Val Loss: 0.5004, Val Acc: 0.7911, duration_time:7.1
+Epoch 2/20: Val Loss: 0.5011, Val Acc: 0.7911, duration_time:7.4
+Epoch 3/20: Val Loss: 0.5071, Val Acc: 0.7869, duration_time:6.9
+Epoch 4/20: Val Loss: 0.5028, Val Acc: 0.7921, duration_time:7.2
+Epoch 5/20: Val Loss: 0.5025, Val Acc: 0.7911, duration_time:7.3
+Epoch 6/20: Val Loss: 0.4962, Val Acc: 0.7848, duration_time:6.6
+Epoch 7/20: Val Loss: 0.5039, Val Acc: 0.7921, duration_time:7.4
+Epoch 8/20: Val Loss: 0.5054, Val Acc: 0.7900, duration_time:6.7
+Epoch 9/20: Val Loss: 0.5055, Val Acc: 0.7911, duration_time:7.5
+Epoch 10/20: Val Loss: 0.5047, Val Acc: 0.7848, duration_time:7.1
+Epoch 11/20: Val Loss: 0.4986, Val Acc: 0.7890, duration_time:7.2
+Epoch 12/20: Val Loss: 0.4975, Val Acc: 0.7900, duration_time:7.3
+Epoch 13/20: Val Loss: 0.5065, Val Acc: 0.7827, duration_time:6.7
+Epoch 14/20: Val Loss: 0.5035, Val Acc: 0.7827, duration_time:7.5
+Epoch 15/20: Val Loss: 0.4983, Val Acc: 0.7911, duration_time:6.7
+Epoch 16/20: Val Loss: 0.5115, Val Acc: 0.7744, duration_time:7.4
+Epoch 17/20: Val Loss: 0.4978, Val Acc: 0.8004, duration_time:7.3
+Epoch 18/20: Val Loss: 0.5019, Val Acc: 0.8015, duration_time:6.9
+Epoch 19/20: Val Loss: 0.4989, Val Acc: 0.7911, duration_time:7.5
+Epoch 20/20: Val Loss: 0.5040, Val Acc: 0.7869, duration_time:6.7
+test_loss0.456, test_acc0.799
+Accuracy rare words: 0.660, Accuracy negated sentence: 0.597
+lstm with w2v
+Epoch 1/20: Val Loss: 121.9898, Val Acc: 0.8087, duration_time:19.9
+Epoch 2/20: Val Loss: 121.5545, Val Acc: 0.8368, duration_time:19.2
+Epoch 3/20: Val Loss: 122.0810, Val Acc: 0.8015, duration_time:19.5
+Epoch 4/20: Val Loss: 121.5530, Val Acc: 0.8306, duration_time:19.1
+Epoch 5/20: Val Loss: 121.6495, Val Acc: 0.8212, duration_time:19.5
+Epoch 6/20: Val Loss: 121.5835, Val Acc: 0.8326, duration_time:19.1
+Epoch 7/20: Val Loss: 121.5798, Val Acc: 0.8326, duration_time:19.1
+Epoch 8/20: Val Loss: 121.6281, Val Acc: 0.8274, duration_time:18.9
+Epoch 9/20: Val Loss: 121.3770, Val Acc: 0.8326, duration_time:18.9
+Epoch 10/20: Val Loss: 121.5712, Val Acc: 0.8326, duration_time:19.5
+Epoch 11/20: Val Loss: 121.5296, Val Acc: 0.8306, duration_time:18.9
+Epoch 12/20: Val Loss: 121.6468, Val Acc: 0.8306, duration_time:19.4
+Epoch 13/20: Val Loss: 121.3387, Val Acc: 0.8410, duration_time:19.0
+Epoch 14/20: Val Loss: 121.8170, Val Acc: 0.8212, duration_time:19.5
+Epoch 15/20: Val Loss: 123.4122, Val Acc: 0.7599, duration_time:18.9
+Epoch 16/20: Val Loss: 124.8143, Val Acc: 0.6819, duration_time:19.3
+Epoch 17/20: Val Loss: 122.8617, Val Acc: 0.7775, duration_time:19.4
+Epoch 18/20: Val Loss: 123.3046, Val Acc: 0.7723, duration_time:18.9
+Epoch 19/20: Val Loss: 122.6640, Val Acc: 0.7890, duration_time:19.1
+Epoch 20/20: Val Loss: 122.3942, Val Acc: 0.7973, duration_time:18.8
+test_loss121.878, test_acc0.818
+Accuracy rare words: 0.780, Accuracy negated sentence: 0.516
