@@ -841,7 +841,7 @@ def make_graph(run_data, session: str):
 
 
 if __name__ == "__main__":
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     # print("run Log linear with one hot")
     # record_data_log_linear = train_log_linear_with_one_hot(device)
     # record_data_log_linear.to_csv("record_data_one_hot.csv")
