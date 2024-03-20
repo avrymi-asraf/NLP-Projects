@@ -371,7 +371,7 @@ class LSTM(nn.Module):
             input_size=embedding_dim,
             hidden_size=hidden_dim,
             num_layers=n_layers,
-            # dropout=dropout,
+            dropout=dropout,
             bidirectional=True,
             batch_first=True,
         )
@@ -398,7 +398,7 @@ class LSTM(nn.Module):
         out = self.fc(concatenated_tensor)
 
         # out = torch.sigmoid(out)
-        return 
+        return out
 
     def predict(self, text):
         out = self.forward(text)
@@ -651,13 +651,13 @@ def train_log_linear_with_one_hot(device="cpu", use_sub_phrases=True) -> pd.Data
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
-    # model = torch.compile(model)
+    model = torch.compile(model)
     criterion_one_hot = torch.nn.BCEWithLogitsLoss()
 
     # Set hyperparameters
     n_epochs = 7
-    lr = 0.01
-    weight_decay = 0.001
+    lr = 0.001
+    weight_decay = 0.0
 
     # Create data iterators with the specified batch size
     # Train the model
@@ -708,12 +708,12 @@ def train_log_linear_with_w2v(device="cpu") -> pd.DataFrame:
 
     # Initialize your log linear model with one-hot representation
     model = LogLinear(data_manager.get_input_shape()).to(torch.float64).to(device)
-    # model = torch.compile(model)
-    criterion_w2v = torch.nn.BCEWithLogitsLoss()
+    model = torch.compile(model)
+    criterion_w2v = torch.nn.CrossEntropyLoss()
     # Set hyperparameters
-    n_epochs = 7
-    lr = 0.01
-    weight_decay = 0.001
+    n_epochs = 20
+    lr = 0.001
+    weight_decay = 0.0
 
     # Create data iterators with the specified batch size
     # Train the model
@@ -768,20 +768,20 @@ def train_lstm_with_w2v(device="cpu"):
         LSTM(
             embedding_dim=data_manager.get_input_shape(),
             hidden_dim=100,
-            n_layers=1,
-            dropout=0.3,
+            n_layers=2,
+            dropout=0.1,
             len_sentence=52
         )
         .to(torch.float64)
         .to(device)
     )
-    # model = torch.compile(model)
+    model = torch.compile(model)
 
     # Set hyperparameters
-    n_epochs = 7
-    lr = 0.01
-    weight_decay = 0.001
-    criterion_LSTM = torch.nn.BCEWithLogitsLoss()
+    n_epochs = 20
+    lr = 0.001
+    weight_decay = 0.0
+    criterion_LSTM = torch.nn.CrossEntropyLoss()
     # Create data iterators with the specified batch size
     # Train the model
     train_record_data = train_model(
@@ -845,8 +845,8 @@ if __name__ == "__main__":
     # print("run Log linear with one hot")
     # record_data_log_linear = train_log_linear_with_one_hot(device)
     # record_data_log_linear.to_csv("record_data_one_hot.csv")
-    # record_data_log_linear = pd.read_csv("ex3\\record_data_one_hot.csv")
-    # make_graph(record_data_log_linear, "One Hot Vector")
+    # # record_data_log_linear = pd.read_csv("ex3\\record_data_one_hot.csv")
+    # # make_graph(record_data_log_linear, "One Hot Vector")
     # print("run Log linear with w2v")
     # record_data_w2v_average = train_log_linear_with_w2v(device)
     # record_data_w2v_average.to_csv("record_data_w2v.csv")
