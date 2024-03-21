@@ -94,7 +94,7 @@ def transformer_classification(portion=1.0):
             self.labels = labels
 
         def __getitem__(self, idx):
-            item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+            item = {key: val[idx].clone() for key, val in self.encodings.items()}
             item["labels"] = torch.tensor(self.labels[idx])
             return item
 
@@ -158,16 +158,16 @@ def zeroshot_classification(portion=1.0):
 if __name__ == "__main__":
     portions = [0.1, 0.5, 1.0]
     # Q1
-    print("Logistic regression results:")
-    for p in portions:
-        print(f"Portion: {p}")
-        print('\t',f'{linear_classification(p):.4f}')
-
-    # Q2
-    # print("\nFinetuning results:")
+    # print("Logistic regression results:")
     # for p in portions:
     #     print(f"Portion: {p}")
-    #     print(transformer_classification(portion=p))
+    #     print('\t',f'{linear_classification(p):.4f}')
+
+    Q2
+    print("\nFinetuning results:")
+    for p in portions:
+        print(f"Portion: {p}")
+        print(transformer_classification(portion=p))
 
     # # Q3
     # print("\nZero-shot result:")
