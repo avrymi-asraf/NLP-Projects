@@ -186,7 +186,6 @@ def zeroshot_classification(portion=1.0):
         "zero-shot-classification", model="cross-encoder/nli-MiniLM2-L6-H768"
     )
     candidate_labels = list(category_dict.values())
-    can_lbl_check = [0, 1, 2, 3]
     # Add your code here
     # see https://huggingface.co/docs/transformers/v4.25.1/en/main_classes/pipelines#transformers.ZeroShotClassificationPipeline
     predicted_labels = []
