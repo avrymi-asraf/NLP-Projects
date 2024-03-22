@@ -4,6 +4,11 @@
 
 import numpy as np
 from typing import List, Tuple
+from datasets import load_dataset
+
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("distilroberta-base", cache_dir=None)
 
 # subset of categories that we will use
 category_dict = {
@@ -12,6 +17,10 @@ category_dict = {
     "sci.electronics": "science, electronics",
     "talk.politics.guns": "politics, guns",
 }
+
+
+def tokenize_dataset(dataset):
+    return tokenizer(dataset["text"])
 
 
 def get_data(categories=None, portion=1.0) -> Tuple[list, list, list, list]:
@@ -103,7 +112,7 @@ def transformer_classification(portion=1.0):
 
     from datasets import load_metric
 
-    metric = load_metric("accuracy")
+    metric = load_metric("accuracy", trust_remote_code=True)
 
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
@@ -113,7 +122,7 @@ def transformer_classification(portion=1.0):
     from transformers import Trainer, TrainingArguments
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained("distilroberta-base", cache_dir=None)
+    # tokenizer = AutoTokenizer.from_pretrained("distilroberta-base", cache_dir=None)
     model = AutoModelForSequenceClassification.from_pretrained(
         "distilroberta-base",
         cache_dir=None,
@@ -126,9 +135,40 @@ def transformer_classification(portion=1.0):
     )
 
     # Add your code here
-    # see https://huggingface.co/docs/transformers/v4.25.1/en/quicktour#trainer-a-pytorch-optimized-training-loop
+    train_encodings = tokenizer(x_train, truncation=True, padding=True, return_tensors="pt")
+    test_encodings = tokenizer(x_test, truncation=True, padding=True, return_tensors="pt")
+    train_dataset = Dataset(train_encodings, y_train)
+    test_dataset = Dataset(test_encodings, y_test)
+
+    dataset = load_dataset("rotten_tomatoes")  # doctest: +IGNORE_RESULT
+    dataset = dataset.map(tokenize_dataset, batched=True)
+
+    training_args = TrainingArguments(
+        output_dir="./results",
+        learning_rate=5e-5,
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
+        num_train_epochs=3,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=test_dataset,
+        tokenizer=tokenizer,
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+
+    # Evaluate the model
+    eval_results = trainer.evaluate()
+
+    # outputs = model(train_encodings)
+
     # Use the DataSet object defined above. No need for a DataCollator
-    return
+    return eval_results
 
 
 # Q3
@@ -160,15 +200,15 @@ if __name__ == "__main__":
     # Q1
     # print("Logistic regression results:")
     # for p in portions:
-    #     print(f"Portion: {p}")
-    #     print('\t',f'{linear_classification(p):.4f}')
+    #    print(f"Portion: {p}")
+    #    print('\t',f'{linear_classification(p):.4f}')
 
-    Q2
+    # Q2
     print("\nFinetuning results:")
     for p in portions:
         print(f"Portion: {p}")
         print(transformer_classification(portion=p))
 
-    # # Q3
+    # Q3
     # print("\nZero-shot result:")
     # print(zeroshot_classification())
