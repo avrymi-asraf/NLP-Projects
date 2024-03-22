@@ -5,6 +5,7 @@
 import numpy as np
 from typing import List, Tuple
 from datasets import load_dataset
+import tqdm
 
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -18,6 +19,7 @@ category_dict = {
     "talk.politics.guns": "politics, guns",
 }
 
+category_dict_values_list = list(category_dict.values())
 
 def tokenize_dataset(dataset):
     return tokenizer(dataset["text"])
@@ -163,9 +165,6 @@ def transformer_classification(portion=1.0):
     # Evaluate the model
     eval_results = trainer.evaluate()
 
-    # outputs = model(train_encodings)
-
-    # Use the DataSet object defined above. No need for a DataCollator
     return eval_results
 
 
@@ -187,10 +186,19 @@ def zeroshot_classification(portion=1.0):
         "zero-shot-classification", model="cross-encoder/nli-MiniLM2-L6-H768"
     )
     candidate_labels = list(category_dict.values())
-
+    can_lbl_check = [0, 1, 2, 3]
     # Add your code here
     # see https://huggingface.co/docs/transformers/v4.25.1/en/main_classes/pipelines#transformers.ZeroShotClassificationPipeline
-    return
+    predicted_labels = []
+    for text in tqdm.tqdm(x_test, leave=False):
+        result = clf(text, candidate_labels)
+        predicted_label = result["labels"][0]  # Get the predicted label with the highest score
+        predicted_labels.append(predicted_label)
+    y_test_labels = [category_dict_values_list[index] for index in y_test]
+    # Calculate accuracy
+    accuracy = accuracy_score(y_test_labels, predicted_labels)
+
+    return accuracy
 
 
 if __name__ == "__main__":
@@ -202,11 +210,11 @@ if __name__ == "__main__":
     #    print('\t',f'{linear_classification(p):.4f}')
 
     # Q2
-    print("\nFinetuning results:")
-    for p in portions:
-        print(f"Portion: {p}")
-        print(transformer_classification(portion=p))
+    # print("\nFinetuning results:")
+    # for p in portions:
+    #     print(f"Portion: {p}")
+    #     print(transformer_classification(portion=p))
 
     # Q3
-    # print("\nZero-shot result:")
-    # print(zeroshot_classification())
+    print("\nZero-shot result:")
+    print(zeroshot_classification())
