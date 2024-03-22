@@ -141,9 +141,6 @@ def transformer_classification(portion=1.0):
     train_dataset = Dataset(train_encodings, y_train)
     test_dataset = Dataset(test_encodings, y_test)
 
-    dataset = load_dataset("rotten_tomatoes")  # doctest: +IGNORE_RESULT
-    dataset = dataset.map(tokenize_dataset, batched=True)
-
     training_args = TrainingArguments(
         output_dir="./results",
         learning_rate=5e-5,
