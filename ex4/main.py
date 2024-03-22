@@ -68,6 +68,7 @@ def linear_classification(portion=1.0):
     :param portion: portion of the data to use
     :return: classification accuracy
     """
+
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import accuracy_score
