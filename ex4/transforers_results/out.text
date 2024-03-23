@@ -1,0 +1,10 @@
+Finetuning results:
+Portion: 0.1
+{'train_runtime': 13.4194, 'train_samples_per_second': 51.195, 'train_steps_per_second': 3.353, 'train_loss': 0.6020779079861112, 'epoch': 3.0}
+{'eval_loss': 0.3957553207874298, 'eval_accuracy': 0.8561007957559682, 'eval_runtime': 7.8544, 'eval_samples_per_second': 191.994, 'eval_steps_per_second': 12.095, 'epoch': 3.0}
+Portion: 0.5
+{'train_runtime': 50.0596, 'train_samples_per_second': 67.899, 'train_steps_per_second': 4.255, 'train_loss': 0.2759598387239125, 'epoch': 3.0}
+{'eval_loss': 0.4168926179409027, 'eval_accuracy': 0.9038461538461539, 'eval_runtime': 7.4446, 'eval_samples_per_second': 202.562, 'eval_steps_per_second': 12.761, 'epoch': 3.0}
+Portion: 1.0
+{'train_runtime': 100.3947, 'train_samples_per_second': 67.743, 'train_steps_per_second': 4.243, 'train_loss': 0.22454393413704885, 'epoch': 3.0}
+{'eval_loss': 0.4136412441730499, 'eval_accuracy': 0.906498673740053, 'eval_runtime': 7.4403, 'eval_samples_per_second': 202.679, 'eval_steps_per_second': 12.768, 'epoch': 3.0}

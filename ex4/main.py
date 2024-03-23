@@ -20,6 +20,13 @@ category_dict = {
 }
 
 category_dict_values_list = list(category_dict.values())
+from transformers import TrainerCallback
+
+class PrintLossCallback(TrainerCallback):
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if state.is_local_process_zero and "loss" in logs:
+            print(f"Epoch {state.epoch}: Loss = {logs['loss']:.4f}")
+
 
 def tokenize_dataset(dataset):
     return tokenizer(dataset["text"])
@@ -84,7 +91,7 @@ def linear_classification(portion=1.0):
     x_test_transformed = tf.transform(x_test)
     model.fit(x_train_transformed, y_train)
     # Add your code here
-    return model.score(x_test_transformed, y_test)
+    return model.score(x_test_transformed, y_test), 
 
 
 # Q2
@@ -158,6 +165,8 @@ def transformer_classification(portion=1.0):
         eval_dataset=test_dataset,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
+        callbacks=[PrintLossCallback()]
+
     )
 
     trainer.train()
@@ -169,7 +178,7 @@ def transformer_classification(portion=1.0):
 
 
 # Q3
-def zeroshot_classification(portion=1.0):
+def zeroshot_classification(portion=1.0,device='cpu'):
     """
     Perform zero-shot classification
     :param portion: portion of the data to use
@@ -183,14 +192,14 @@ def zeroshot_classification(portion=1.0):
         categories=category_dict.keys(), portion=portion
     )
     clf = pipeline(
-        "zero-shot-classification", model="cross-encoder/nli-MiniLM2-L6-H768"
+        "zero-shot-classification", model="cross-encoder/nli-MiniLM2-L6-H768",device=device
     )
     candidate_labels = list(category_dict.values())
     # Add your code here
     # see https://huggingface.co/docs/transformers/v4.25.1/en/main_classes/pipelines#transformers.ZeroShotClassificationPipeline
     predicted_labels = []
     for text in tqdm.tqdm(x_test, leave=False):
-        result = clf(text, candidate_labels)
+        result = clf(text.to(device), candidate_labels)
         predicted_label = result["labels"][0]  # Get the predicted label with the highest score
         predicted_labels.append(predicted_label)
     y_test_labels = [category_dict_values_list[index] for index in y_test]
@@ -209,11 +218,11 @@ if __name__ == "__main__":
     #    print('\t',f'{linear_classification(p):.4f}')
 
     # Q2
-    # print("\nFinetuning results:")
-    # for p in portions:
-    #     print(f"Portion: {p}")
-    #     print(transformer_classification(portion=p))
+    print("\nFinetuning results:")
+    for p in portions:
+        print(f"Portion: {p}")
+        print(transformer_classification(portion=p))
 
     # Q3
-    print("\nZero-shot result:")
-    print(zeroshot_classification())
+    # print("\nZero-shot result:")
+    # print(zeroshot_classification())
