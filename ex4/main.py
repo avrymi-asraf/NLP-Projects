@@ -20,13 +20,6 @@ category_dict = {
 }
 
 category_dict_values_list = list(category_dict.values())
-from transformers import TrainerCallback
-
-class PrintLossCallback(TrainerCallback):
-    def on_log(self, args, state, control, logs=None, **kwargs):
-        if state.is_local_process_zero and "loss" in logs:
-            print(f"Epoch {state.epoch}: Loss = {logs['loss']:.4f}")
-
 
 def tokenize_dataset(dataset):
     return tokenizer(dataset["text"])
@@ -80,7 +73,7 @@ def linear_classification(portion=1.0):
 
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.linear_model import LogisticRegression
-    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import accuracy_score, log_loss
 
     tf = TfidfVectorizer(stop_words="english", max_features=1000)
     x_train, y_train, x_test, y_test = get_data(
@@ -91,7 +84,7 @@ def linear_classification(portion=1.0):
     x_test_transformed = tf.transform(x_test)
     model.fit(x_train_transformed, y_train)
     # Add your code here
-    return model.score(x_test_transformed, y_test), 
+    return model.score(x_test_transformed, y_test), log_loss(y_test, model.predict_proba(x_test_transformed))
 
 
 # Q2
